@@ -1,7 +1,8 @@
 package net.viperfish.minijava.parser;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,34 +31,36 @@ public class TokenScannerTest {
                 }
                 String result = parsed.toString().trim();
                 String expected = new String(Files.readAllBytes(Paths.get("resources", resources + "Expected")));
-                Assert.assertEquals(expected, result);
+                Assertions.assertEquals(expected, result);
             }
         }
     }
 
-    @Test(expected = ParsingException.class)
+    @Test()
     public void testBlockCommentFail() throws IOException, ParsingException {
         try (FileInputStream in = new FileInputStream(Paths.get("resources", "badBlockComment").toFile())) {
             TokenScanner scanner = new TokenScanner(in);
-            scanner.nextToken();
+            Assertions.assertThrows(ParsingException.class, scanner::nextToken);
         }
     }
 
-    @Test(expected = ParsingException.class)
+    @Test()
     public void testUnicodeChars() throws IOException, ParsingException {
         try (FileInputStream in = new FileInputStream(Paths.get("resources", "badEncoding").toFile())) {
             TokenScanner scanner = new TokenScanner(in);
-            scanner.nextToken();
+            Assertions.assertThrows(ParsingException.class, scanner::nextToken);
         }
     }
 
-    @Test(expected = ParsingException.class)
+    @Test()
     public void testBadOperator() throws IOException, ParsingException {
         try (FileInputStream in = new FileInputStream(Paths.get("resources", "badOperators").toFile())) {
             TokenScanner scanner = new TokenScanner(in);
-            while (scanner.hasNext()) {
-                scanner.nextToken();
-            }
+            Assertions.assertThrows(ParsingException.class, () -> {
+                while (scanner.hasNext()) {
+                    scanner.nextToken();
+                }
+            });
         }
     }
 

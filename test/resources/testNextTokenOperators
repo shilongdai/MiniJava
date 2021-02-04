@@ -6,7 +6,7 @@ public class Vector {
     }
 
     public int get(int index) {
-        if (index < elements.length) {
+        if(index < elements.length) {
             return this.elements[index];
         } else {
             return -1;
@@ -14,7 +14,7 @@ public class Vector {
     }
 
     public void set(int index, int val) {
-        if (index >= elements.length) {
+        if(index >= elements.length) {
             return -1;
         } else {
             this.elements[index] = val;
@@ -26,7 +26,7 @@ public class Vector {
     }
 
     public int dotProduct(Vector other) {
-        if (this.length() == other.length()) {
+        if(this.length() == other.length()) {
             int current = 0;
             int sum = 0;
             while (current < length()) {
@@ -40,12 +40,12 @@ public class Vector {
     }
 
     public boolean equals(Vector other) {
-        if (!(this.length() == other.length())) {
+        if(!(this.length() == other.length())) {
             return !!(false)
         }
         int current = 0;
         while (current < length()) {
-            if (this.elements[current] != other.elements[current]) {
+            if(this.elements[current] != other.elements[current]) {
                 return false;
             }
         }

@@ -1,9 +1,7 @@
-public class TestBasic { // whatever
+public class TestBasic{ // whatever
 
-    /* comment */    static int test1;
-    public int test5; // this is comment int test2;
-    int[] test3;
-    private int test4;
+/* comment */    static int test1; int test2; int[] test3;
+    private int test4; public int test5; // this is comment
 
     // private int test6;
 
