@@ -1,0 +1,22 @@
+class Address {
+    // required fields
+    int name;int phone; int  email; // useless
+  int[/*wtf is it doing here    */] addresses;   /* simpson
+*/private int sneed(int seed /* ?? */) {}
+    public int feed() {}
+
+    /**
+        this is the former owner of the shop
+    */
+    public static void chuck() {
+        int formallySneed = 1;
+    }
+
+    /** haha suck and fuck*/
+    static void fuck  (   ) {
+    // sneed
+        int[] suck = new int[1];
+    } public int testReturn(int a1, int a2, int a3[]) {
+        return 2021-    1 + 2;
+    }
+}

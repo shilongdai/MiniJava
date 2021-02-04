@@ -1,4 +1,4 @@
-package net.viperfish.comp520.ebnf;
+package net.viperfish.minijava.ebnf;
 
 public interface ParsableSymbol extends Symbol {
 

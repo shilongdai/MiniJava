@@ -1,0 +1,7 @@
+public class LarpAsR {
+
+    public void larp() {
+        desc %in% vector
+    }
+
+}

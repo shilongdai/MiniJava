@@ -1,4 +1,4 @@
-package net.viperfish.comp520.ebnf;
+package net.viperfish.minijava.ebnf;
 
 import java.util.*;
 
@@ -481,6 +481,13 @@ public class EBNFGrammar {
                             rules.get(checking.getName()).remove(current);
                         }
                     }
+                }
+                if (!current.getExpression().isEmpty()) {
+                    Symbol finalSymbol = current.getExpression().get(current.getExpression().size() - 1);
+                    if (!rules.containsKey(finalSymbol.getName())) {
+                        rules.put(finalSymbol.getName(), new HashSet<>());
+                    }
+                    rules.get(finalSymbol.getName()).add(current);
                 }
             }
         }
