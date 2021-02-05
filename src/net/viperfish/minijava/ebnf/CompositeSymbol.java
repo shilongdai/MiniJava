@@ -10,13 +10,18 @@ public class CompositeSymbol implements Symbol {
     private String name;
 
     public CompositeSymbol(List<Symbol> symbols) {
+        if(symbols.size() == 0) {
+            throw new IllegalArgumentException("Composite of nothing");
+        }
+
         this.symbols = new ArrayList<>(symbols);
 
         StringBuilder sb = new StringBuilder();
         sb.append("(");
         for (Symbol s : this.symbols) {
-            sb.append(s.getName());
+            sb.append(s.getName()).append(" ");
         }
+        sb = new StringBuilder(sb.toString().trim());
         sb.append(")");
         this.name = sb.toString();
     }

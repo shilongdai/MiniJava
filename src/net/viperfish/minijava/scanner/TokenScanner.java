@@ -1,4 +1,4 @@
-package net.viperfish.minijava.parser;
+package net.viperfish.minijava.scanner;
 
 import java.io.IOException;
 import java.io.InputStream;

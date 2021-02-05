@@ -1,4 +1,4 @@
-package net.viperfish.minijava.parser;
+package net.viperfish.minijava.scanner;
 
 import java.util.Objects;
 

@@ -7,6 +7,7 @@ public class EBNFGrammar {
     public static final ParsableSymbol EMPTY_STRING = new EmptyStringSymbol();
 
     private Map<String, Symbol> symbols;
+    private Map<String, LookUpSymbol> placeholders;
 
     private Collection<String> startSymbols;
     private Collection<String> terminalSymbols;
@@ -19,6 +20,9 @@ public class EBNFGrammar {
         terminalSymbols = new HashSet<>();
         nonTerminalSymbols = new HashSet<>();
         unnamedSymbols = new HashSet<>();
+        placeholders = new HashMap<>();
+
+        registerTerminalSymbol(EMPTY_STRING);
     }
 
     public void registerStartSymbol(Symbol start) {
@@ -49,7 +53,11 @@ public class EBNFGrammar {
     }
 
     public Symbol placeholderName(String symbolName) {
-        return new LookUpSymbol(symbolName);
+        if(!placeholders.containsKey(symbolName)) {
+            LookUpSymbol placeholder = new LookUpSymbol(symbolName);
+            placeholders.put(symbolName, placeholder);
+        }
+        return placeholders.get(symbolName);
     }
 
     public Collection<String> getStartSymbols() {
@@ -60,7 +68,6 @@ public class EBNFGrammar {
         return new HashSet<>(terminalSymbols);
     }
 
-
     public Collection<String> getNonTerminalSymbols() {
         return new HashSet<>(nonTerminalSymbols);
     }
@@ -70,6 +77,7 @@ public class EBNFGrammar {
     }
 
     public Collection<String> getNullableSymbols() {
+        checkPlaceholders();
         Collection<String> currentNullable = new HashSet<>();
         Collection<String> prevNullable;
 
@@ -109,6 +117,7 @@ public class EBNFGrammar {
     }
 
     public Map<String, Collection<ParsableSymbol>> starterSets() {
+        checkPlaceholders();
         Map<String, Collection<ParsableSymbol>> currentStarter = new HashMap<>();
         Map<String, Collection<ParsableSymbol>> prevStarter = null;
         Collection<String> nullable = getNullableSymbols();
@@ -135,6 +144,7 @@ public class EBNFGrammar {
     }
 
     public Map<String, Collection<ParsableSymbol>> followers() {
+        checkPlaceholders();
         Collection<String> nullable = getNullableSymbols();
         Map<String, Collection<ParsableSymbol>> starters = starterSets();
 
@@ -183,6 +193,12 @@ public class EBNFGrammar {
                 }
                 currentFollower.put(s, newSet);
             }
+
+            walkedSet.clear();
+            decisionNodeFollowers = new GetDecisionNodeFollowers(currentFollower);
+            for (Symbol s : symbols.values()) {
+                walkSymbol(s, decisionNodeFollowers, walkedSet);
+            }
         } while (!currentFollower.equals(prevFollower));
 
         for (String s : startSymbols) {
@@ -193,6 +209,7 @@ public class EBNFGrammar {
     }
 
     public Collection<PredictionSet> predictSets() {
+        checkPlaceholders();
         Map<String, Collection<ParsableSymbol>> starters = starterSets();
         Map<String, Collection<ParsableSymbol>> followers = followers();
 
@@ -237,8 +254,15 @@ public class EBNFGrammar {
                     Collection<ParsableSymbol> predictLater = null;
 
                     List<Symbol> symbolList = s.getExpression().subList(i + 1, s.getExpression().size());
-                    Symbol composite = new CompositeSymbol(symbolList);
-                    Collection<ParsableSymbol> starter = starters(starters, new CompositeSymbol(symbolList));
+                    Symbol beta;
+                    if(symbolList.isEmpty()) {
+                        beta = EMPTY_STRING;
+                    } else if(symbolList.size() > 1) {
+                        beta = new CompositeSymbol(symbolList);
+                    } else {
+                        beta = symbolList.get(0);
+                    }
+                    Collection<ParsableSymbol> starter = starters(starters, beta);
                     Collection<ParsableSymbol> follower = followers.get(s.getName());
                     predictLater = unionIfEmpty(starter, follower);
 
@@ -251,7 +275,7 @@ public class EBNFGrammar {
                     }
 
                     predictSets.put(current.getExpression().get(0).getName(), predictCurrent);
-                    predictSets.put(composite.getName(), predictLater);
+                    predictSets.put(beta.getName(), predictLater);
                     result.add(new WildcardPredictSet(s, predictSets, isLL1));
                 }
             }
@@ -324,6 +348,9 @@ public class EBNFGrammar {
 
     private <T> Collection<T> unionIfEmpty(Collection<? extends Collection<T>> chainedUnionIfEmpty) {
         List<? extends Collection<T>> ogList = new ArrayList<>(chainedUnionIfEmpty);
+        if(ogList.size() == 0) {
+            System.out.println("WTF");
+        }
         if (ogList.size() == 1) {
             return new HashSet<>(ogList.get(0));
         }
@@ -354,7 +381,19 @@ public class EBNFGrammar {
         walker.process(s);
         walked.add(s.getName());
         for (Symbol next : s.getExpression()) {
+            if(next instanceof LookUpSymbol) {
+                continue;
+            }
             walkSymbol(next, walker, walked);
+        }
+    }
+
+    private void checkPlaceholders() {
+        if(!symbols.keySet().containsAll(placeholders.keySet())) {
+            Set<String> badPlaceholders = new HashSet<>();
+            badPlaceholders.addAll(placeholders.keySet());
+            badPlaceholders.removeAll(symbols.keySet());
+            throw new IllegalStateException("Uninstantiated Placeholders: " + badPlaceholders);
         }
     }
 
@@ -368,6 +407,9 @@ public class EBNFGrammar {
 
         @Override
         public void process(Symbol c) {
+            if(c instanceof LookUpSymbol) {
+                return;
+            }
             if (!EBNFGrammar.this.symbols.containsKey(c.getName())) {
                 EBNFGrammar.this.symbols.put(c.getName(), c);
                 if (!(startSymbols.contains(c.getName()) || terminalSymbols.contains(c.getName()) || nonTerminalSymbols.contains(c.getName()))) {
