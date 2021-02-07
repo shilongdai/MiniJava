@@ -1,5 +1,7 @@
 package net.viperfish.minijava.ebnf;
 
+import net.viperfish.minijava.scanner.Token;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -33,8 +35,8 @@ public class StandardTerminalSymbol implements ParsableSymbol {
     }
 
     @Override
-    public boolean isInstance(String token) {
-        return token.equals(this.token);
+    public boolean isInstance(Token token) {
+        return token.getSpelling().equals(this.token);
     }
 
     @Override

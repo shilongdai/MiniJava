@@ -7,8 +7,8 @@ import java.util.Set;
 
 public class DecisionPredictSet extends BasePredictSet {
 
-    public DecisionPredictSet(Symbol srcRule, Map<String, Collection<ParsableSymbol>> predictSymbols) {
-        super(srcRule, predictSymbols);
+    public DecisionPredictSet(Symbol srcRule, Map<String, Collection<ParsableSymbol>> predictSymbols, int predictPoint) {
+        super(srcRule, predictSymbols, predictPoint);
     }
 
     @Override

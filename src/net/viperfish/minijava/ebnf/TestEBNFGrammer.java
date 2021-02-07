@@ -46,15 +46,15 @@ public class TestEBNFGrammer {
         grammer.registerTerminalSymbol(lpb);
         ParsableSymbol rpb = new StandardTerminalSymbol(")");
         grammer.registerTerminalSymbol(rpb);
-        ParsableSymbol unop = new StandardTerminalSymbol("Unop");
+        ParsableSymbol unop = new StandardTerminalSymbol("unop");
         grammer.registerTerminalSymbol(unop);
-        ParsableSymbol binop = new StandardTerminalSymbol("Binop");
+        ParsableSymbol binop = new StandardTerminalSymbol("binop");
         grammer.registerTerminalSymbol(binop);
-        ParsableSymbol num = new StandardTerminalSymbol("Num");
+        ParsableSymbol num = new StandardTerminalSymbol("num");
         grammer.registerTerminalSymbol(num);
-        ParsableSymbol True = new StandardTerminalSymbol("True");
+        ParsableSymbol True = new StandardTerminalSymbol("true");
         grammer.registerTerminalSymbol(True);
-        ParsableSymbol False = new StandardTerminalSymbol("False");
+        ParsableSymbol False = new StandardTerminalSymbol("false");
         grammer.registerTerminalSymbol(False);
         ParsableSymbol New = new StandardTerminalSymbol("new");
         grammer.registerTerminalSymbol(New);
@@ -64,7 +64,7 @@ public class TestEBNFGrammer {
         grammer.registerTerminalSymbol(llb);
         ParsableSymbol rlb = new StandardTerminalSymbol("}");
         grammer.registerTerminalSymbol(rlb);
-        ParsableSymbol Boolean = new StandardTerminalSymbol("Boolean");
+        ParsableSymbol Boolean = new StandardTerminalSymbol("boolean");
         grammer.registerTerminalSymbol(Boolean);
         ParsableSymbol semi = new StandardTerminalSymbol(";");
         grammer.registerTerminalSymbol(semi);
@@ -72,23 +72,23 @@ public class TestEBNFGrammer {
         grammer.registerTerminalSymbol(eq);
         ParsableSymbol comma = new StandardTerminalSymbol(",");
         grammer.registerTerminalSymbol(comma);
-        ParsableSymbol reTurn = new StandardTerminalSymbol("Return");
+        ParsableSymbol reTurn = new StandardTerminalSymbol("return");
         grammer.registerTerminalSymbol(reTurn);
-        ParsableSymbol If = new StandardTerminalSymbol("If");
+        ParsableSymbol If = new StandardTerminalSymbol("if");
         grammer.registerTerminalSymbol(If);
-        ParsableSymbol Else = new StandardTerminalSymbol("Else");
+        ParsableSymbol Else = new StandardTerminalSymbol("else");
         grammer.registerTerminalSymbol(Else);
-        ParsableSymbol While = new StandardTerminalSymbol("While");
+        ParsableSymbol While = new StandardTerminalSymbol("while");
         grammer.registerTerminalSymbol(While);
-        ParsableSymbol Static = new StandardTerminalSymbol("Static");
+        ParsableSymbol Static = new StandardTerminalSymbol("static");
         grammer.registerTerminalSymbol(Static);
-        ParsableSymbol Public = new StandardTerminalSymbol("Public");
+        ParsableSymbol Public = new StandardTerminalSymbol("public");
         grammer.registerTerminalSymbol(Public);
-        ParsableSymbol Private = new StandardTerminalSymbol("Private");
+        ParsableSymbol Private = new StandardTerminalSymbol("private");
         grammer.registerTerminalSymbol(Private);
-        ParsableSymbol Void = new StandardTerminalSymbol("Void");
+        ParsableSymbol Void = new StandardTerminalSymbol("void");
         grammer.registerTerminalSymbol(Void);
-        ParsableSymbol Class = new StandardTerminalSymbol("Class");
+        ParsableSymbol Class = new StandardTerminalSymbol("class");
         grammer.registerTerminalSymbol(Class);
         ParsableSymbol terminalSymbol = new StandardTerminalSymbol("$");
         grammer.registerTerminalSymbol(terminalSymbol);
@@ -97,23 +97,26 @@ public class TestEBNFGrammer {
 
         // Reference ::= id | this | Reference . id
         List<Symbol> referenceList = new ArrayList<>();
-        referenceList.add(id);
-        referenceList.add(tHis);
-        referenceList.add(new CompositeSymbol(Arrays.asList(grammer.placeholderName("Reference"), dot, id)));
+        // id | this | Reference . id -> (id | this) (. id)*
+        referenceList.add(new DecisionPointSymbol(Arrays.asList(tHis, id)));
+        Symbol dotIdContinue = new WildCardSymbol(new CompositeSymbol(Arrays.asList(dot, id)));
+        referenceList.add(dotIdContinue);
 
-        Symbol reference = new DecisionPointSymbol("Reference", referenceList);
+        Symbol reference = new CompositeSymbol("Reference", referenceList);
         grammer.registerNonTerminalSymbol(reference);
 
         // Type ::= int | boolean | id | ( int | id ) []
+        // -> int | boolean | id | int [ ] | id [ ] -> boolean | int (ε | [ ] ) | id ( ε | [ ] )
         List<Symbol> typeList = new ArrayList<>();
-        typeList.add(Int);
-        typeList.add(Boolean);
-        typeList.add(id);
         List<Symbol> typeArrayDec = new ArrayList<>();
-        typeArrayDec.add(new DecisionPointSymbol(Arrays.asList(Int, id)));
         typeArrayDec.add(lsqb);
         typeArrayDec.add(rsqb);
-        typeList.add(new CompositeSymbol(typeArrayDec));
+        Symbol emptyOrSqb = new DecisionPointSymbol(Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol(typeArrayDec)));
+        typeList.add(Boolean);
+        Symbol intType = new CompositeSymbol(Arrays.asList(Int, emptyOrSqb));
+        Symbol idType = new CompositeSymbol(Arrays.asList(id, emptyOrSqb));
+        typeList.add(intType);
+        typeList.add(idType);
 
         Symbol type = new DecisionPointSymbol("Type", typeList);
         grammer.registerNonTerminalSymbol(type);
@@ -129,24 +132,34 @@ public class TestEBNFGrammer {
                   | num | true | false
                   | new ( id () | int [ Expression ] | id [ Expression ] )
          */
+        List<Symbol> expressionListNoRecursion = new ArrayList<>();
         List<Symbol> expressionList = new ArrayList<>();
-        expressionList.add(reference);
-        expressionList.add(new CompositeSymbol(Arrays.asList(reference, lsqb, grammer.placeholderName("Expression"), rsqb)));
+        // apply left factorization Reference ( [ Expression ] | ( ArgumentList? ) | ε )
+        List<Symbol> factorizedExpressionList = new ArrayList<>();
         Symbol argListOrEmpty = new DecisionPointSymbol(Arrays.asList(grammer.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
-        expressionList.add(new CompositeSymbol(Arrays.asList(reference, lpb, argListOrEmpty, rpb)));
-        expressionList.add(new CompositeSymbol(Arrays.asList(unop, grammer.placeholderName("Expression"))));
-        expressionList.add(new CompositeSymbol(Arrays.asList(grammer.placeholderName("Expression"), binop, grammer.placeholderName("Expression"))));
-        expressionList.add(new CompositeSymbol(Arrays.asList(lpb, grammer.placeholderName("Expression"), rpb)));
-        expressionList.add(num); expressionList.add(True); expressionList.add(False);
+        factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lsqb, grammer.placeholderName("Expression"), rsqb)));
+        factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
+        factorizedExpressionList.add(EBNFGrammar.EMPTY_STRING);
+        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
+        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(unop, grammer.placeholderName("Expression"))));
+        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(lpb, grammer.placeholderName("Expression"), rpb)));
+        expressionListNoRecursion.add(num); expressionListNoRecursion.add(True); expressionListNoRecursion.add(False);
+        // new ( id () | int [ Expression ] | id [ Expression ] ) -> new ( id (() | [ Expression ]) | int [ Expression ])
         List<Symbol> rhsNewList = new ArrayList<>();
-        rhsNewList.add(new CompositeSymbol(Arrays.asList(id, lpb, rpb)));
+        List<Symbol> rhsFactoredList = new ArrayList<>();
+        rhsFactoredList.add(new CompositeSymbol(Arrays.asList(lpb, rpb)));
+        rhsFactoredList.add(new CompositeSymbol(Arrays.asList(lsqb, grammer.placeholderName("Expression"), rsqb)));
+        rhsNewList.add(new CompositeSymbol(Arrays.asList(id, new DecisionPointSymbol(rhsFactoredList))));
         rhsNewList.add(new CompositeSymbol(Arrays.asList(Int, lsqb, grammer.placeholderName("Expression"), rsqb)));
-        rhsNewList.add(new CompositeSymbol(Arrays.asList(id, lsqb, grammer.placeholderName("Expression"), rsqb)));
         Symbol rhsNew = new DecisionPointSymbol(rhsNewList);
         Symbol newDec = new CompositeSymbol(Arrays.asList(New, rhsNew));
-        expressionList.add(newDec);
+        expressionListNoRecursion.add(newDec);
+        // eliminate left recursion E = E binop E -> X(binop E)*
+        DecisionPointSymbol expressionNonRecursive = new DecisionPointSymbol(expressionListNoRecursion);
+        expressionList.add(expressionNonRecursive);
+        expressionList.add(new WildCardSymbol("BinopExpression", new CompositeSymbol("NextBinop", Arrays.asList(binop, grammer.placeholderName("Expression")))));
 
-        Symbol expression = new DecisionPointSymbol("Expression", expressionList);
+        Symbol expression = new CompositeSymbol("Expression", expressionList);
         grammer.registerNonTerminalSymbol(expression);
 
         // ArgumentList ::= Expression ( , Expression )*
@@ -174,10 +187,27 @@ public class TestEBNFGrammer {
         stmtWildCard.add(new WildCardSymbol(grammer.placeholderName("Statement")));
         stmtWildCard.add(rlb);
         statementList.add(new CompositeSymbol(stmtWildCard));
-        statementList.add(new CompositeSymbol(Arrays.asList(type, id, eq, expression, semi)));
-        statementList.add(new CompositeSymbol(Arrays.asList(reference, eq, expression, semi)));
-        statementList.add(new CompositeSymbol(Arrays.asList(reference, lsqb, expression, rsqb, eq, expression, semi)));
-        statementList.add(new CompositeSymbol(Arrays.asList(reference, lpb, new DecisionPointSymbol(Arrays.asList(argumentList, EBNFGrammar.EMPTY_STRING)), rpb, semi)));
+        // apply left factorization Reference ( = Expression | [ Expression ] = Expression | ( ArgumentList? ) ) ;
+        // then eliminates reference and type to ensure LL1
+        List<Symbol> stmtLFList = new ArrayList<>();
+        stmtLFList.add(new CompositeSymbol(Arrays.asList(eq, expression)));
+        stmtLFList.add(new CompositeSymbol(Arrays.asList(lsqb, expression, rsqb, eq, expression)));
+        stmtLFList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
+        Symbol stmtLF = new DecisionPointSymbol(stmtLFList);
+        statementList.add(new CompositeSymbol(Arrays.asList(tHis, dotIdContinue, stmtLF, semi)));
+        statementList.add(new CompositeSymbol(Arrays.asList(new DecisionPointSymbol(Arrays.asList(Boolean, intType)), id, eq, expression, semi)));
+        List<Symbol> factoredTypeRefL = new ArrayList<>();
+        List<Symbol> factoredTypeRefLDec = new ArrayList<>();
+        factoredTypeRefLDec.add(EBNFGrammar.EMPTY_STRING);
+        factoredTypeRefLDec.add(new CompositeSymbol(Arrays.asList(lsqb, expression, rsqb)));
+        factoredTypeRefLDec.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
+        factoredTypeRefL.add(dotIdContinue);
+        factoredTypeRefL.add(new DecisionPointSymbol(factoredTypeRefLDec));
+        List<Symbol> factoredTypeRefR = new ArrayList<>();
+        factoredTypeRefR.add(emptyOrSqb);
+        factoredTypeRefR.add(id);
+        Symbol factoredStmtPart = new CompositeSymbol( Arrays.asList(id, new DecisionPointSymbol("FactoredStatement", Arrays.asList(new CompositeSymbol("RefBracketExp", factoredTypeRefL), new CompositeSymbol("TypeBracketExp", factoredTypeRefR))), eq, expression, semi));
+        statementList.add(factoredStmtPart);
         statementList.add(new CompositeSymbol(Arrays.asList(reTurn, new DecisionPointSymbol(Arrays.asList(expression, EBNFGrammar.EMPTY_STRING)), semi)));
         List<Symbol> ifStmtList = new ArrayList<>();
         ifStmtList.add(If);
@@ -185,7 +215,7 @@ public class TestEBNFGrammer {
         ifStmtList.add(expression);
         ifStmtList.add(rpb);
         ifStmtList.add(grammer.placeholderName("Statement"));
-        ifStmtList.add(new DecisionPointSymbol(Arrays.asList(new CompositeSymbol(Arrays.asList(Else, grammer.placeholderName("Statement"))), EBNFGrammar.EMPTY_STRING)));
+        ifStmtList.add(new DecisionPointSymbol("TrailingElse", Arrays.asList(new CompositeSymbol("ElseStmt", Arrays.asList(Else, grammer.placeholderName("Statement"))), EBNFGrammar.EMPTY_STRING)));
         statementList.add(new CompositeSymbol(ifStmtList));
         statementList.add(new CompositeSymbol(Arrays.asList(While, lpb, expression, rpb, grammer.placeholderName("Statement"))));
 
@@ -196,7 +226,6 @@ public class TestEBNFGrammer {
         List<Symbol> paramList = new ArrayList<>();
         paramList.add(type);
         paramList.add(id);
-        paramList.add(lpb);
         paramList.add(new WildCardSymbol(new CompositeSymbol(Arrays.asList(comma, type, id))));
 
         Symbol parameterList = new CompositeSymbol("ParameterList", paramList);
@@ -216,16 +245,18 @@ public class TestEBNFGrammer {
 
         // MethodDeclaration ::= Visibility Access ( Type | void ) id ( ParameterList? ) {Statement*}
         List<Symbol> methodDeclarationList = new ArrayList<>();
+        List<Symbol> methodDistinguished = new ArrayList<>();
         methodDeclarationList.add(visibility);
         methodDeclarationList.add(access);
         methodDeclarationList.add(new DecisionPointSymbol(Arrays.asList(type, Void)));
         methodDeclarationList.add(id);
-        methodDeclarationList.add(lpb);
-        methodDeclarationList.add(new DecisionPointSymbol(Arrays.asList(parameterList, EBNFGrammar.EMPTY_STRING)));
-        methodDeclarationList.add(rpb);
-        methodDeclarationList.add(llb);
-        methodDeclarationList.add(new WildCardSymbol(statement));
-        methodDeclarationList.add(rlb);
+        methodDistinguished.add(lpb);
+        methodDistinguished.add(new DecisionPointSymbol(Arrays.asList(parameterList, EBNFGrammar.EMPTY_STRING)));
+        methodDistinguished.add(rpb);
+        methodDistinguished.add(llb);
+        methodDistinguished.add(new WildCardSymbol(statement));
+        methodDistinguished.add(rlb);
+        methodDeclarationList.addAll(methodDistinguished);
 
         Symbol methodDeclaration = new CompositeSymbol("MethodDeclaration", methodDeclarationList);
         grammer.registerNonTerminalSymbol(methodDeclaration);
@@ -246,7 +277,16 @@ public class TestEBNFGrammer {
         classDecList.add(Class);
         classDecList.add(id);
         classDecList.add(llb);
-        classDecList.add(new WildCardSymbol(new DecisionPointSymbol(Arrays.asList(fieldDeclaration, methodDeclaration))));
+        // decompose the declarations for LL1
+        List<Symbol> typedDeclaration = new ArrayList<>();
+        typedDeclaration.add(type);
+        typedDeclaration.add(id);
+        typedDeclaration.add(new DecisionPointSymbol(Arrays.asList(semi, new CompositeSymbol(methodDistinguished))));
+        List<Symbol> voidDeclaration = new ArrayList<>();
+        voidDeclaration.add(Void);
+        voidDeclaration.add(id);
+        voidDeclaration.addAll(methodDistinguished);
+        classDecList.add(new CompositeSymbol(Arrays.asList(visibility, access, new DecisionPointSymbol(Arrays.asList(new CompositeSymbol(typedDeclaration), new CompositeSymbol(voidDeclaration))))));
         classDecList.add(rlb);
 
         Symbol classDeclaration = new CompositeSymbol("ClassDeclaration", classDecList);
@@ -306,20 +346,35 @@ public class TestEBNFGrammer {
         Set<String> nonterminals = new HashSet<>();
         nonterminals.addAll(grammar.getStartSymbols());
         nonterminals.addAll(grammar.getNonTerminalSymbols());
+        nonterminals.add(EBNFGrammar.EMPTY_STRING.getName());
         nullable.retainAll(nonterminals);
         starters.keySet().retainAll(nonterminals);
         followers.keySet().retainAll(nonterminals);
 
         System.out.println("\n\n-----------------------------------------");
+        System.out.println("Symbols:");
+        Map<String, Symbol> symbols = grammar.symbols();
+        for(String nonterminal : nonterminals) {
+            Symbol symbol = symbols.get(nonterminal);
+            Symbol toString = null;
+            if(symbol.isDecision()) {
+                toString = new DecisionPointSymbol(symbol.getExpression());
+            } else if(symbol != EBNFGrammar.EMPTY_STRING) {
+                toString = new CompositeSymbol(symbol.getExpression());
+            } else {
+                toString = EBNFGrammar.EMPTY_STRING;
+            }
+            System.out.println(String.format("Symbol %s -> %s", symbol.getName(), toString.toString()));
+        }
         System.out.println("Nullable: " + nullable);
-        System.out.println("Starters: " + starters);
-        System.out.println("Followers:" + followers);
+        System.out.println("Starters: ");
+        printTerminalResults(starters);
+        System.out.println("---------------------------------------------------");
+        System.out.println("Followers:");
+        printTerminalResults(followers);
 
         System.out.println("-----Predict Sets LL1------");
         for (PredictionSet set : predictSets) {
-            if(grammar.getUnnamedSymbols().contains(set.getSrcRule().getName())) {
-                continue;
-            }
             if(set.isLL1()) {
                 System.out.println(String.format("Rule: %s, Sets: %s, LL1: %b", set.getSrcRule().getName(), set.getPredictSets(), set.isLL1()));
             }
@@ -328,8 +383,14 @@ public class TestEBNFGrammer {
         System.out.println("-----Predict Sets Not LL1------");
         for (PredictionSet set : predictSets) {
             if(!set.isLL1()) {
-                System.out.println(String.format("Rule: %s, Sets: %s, LL1: %b", set.getSrcRule().getName(), set.getPredictSets(), set.isLL1()));
+                System.out.println(String.format("Rule: %s, Specific: %s, Sets: %s, LL1: %b", set.getSrcRule().getName(), set.getSrcRule().getExpression().get(set.getPredictPoint()), set.getPredictSets(), set.isLL1()));
             }
+        }
+    }
+
+    private static void printTerminalResults(Map<String, Collection<ParsableSymbol>> symbolMap) {
+        for(Map.Entry<String, Collection<ParsableSymbol>> e : symbolMap.entrySet()) {
+            System.out.println(String.format("Symbol %s: %s", e.getKey(), e.getValue()));
         }
     }
 }

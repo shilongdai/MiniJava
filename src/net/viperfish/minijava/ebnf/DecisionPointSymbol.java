@@ -10,20 +10,20 @@ public class DecisionPointSymbol implements Symbol {
     private String name;
 
     public DecisionPointSymbol(List<Symbol> src) {
-        if(src.size() == 0) {
+        if(src.size() < 2) {
             throw new IllegalArgumentException("Decision over nothing");
         }
 
         this.src = new ArrayList<>(src);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("(");
+        sb.append("⟪");
         for (Symbol s : this.src) {
             sb.append(s.getName()).append(" ").append("|").append(" ");
         }
         sb = new StringBuilder(sb.toString().trim());
         sb.deleteCharAt(sb.length() - 1);
-        sb.append(")");
+        sb.append("⟫");
         this.name = sb.toString();
     }
 

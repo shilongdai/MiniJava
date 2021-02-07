@@ -1,5 +1,7 @@
 package net.viperfish.minijava.ebnf;
 
+import net.viperfish.minijava.scanner.Token;
+
 class EmptyStringSymbol extends StandardTerminalSymbol {
 
     public EmptyStringSymbol() {
@@ -7,7 +9,7 @@ class EmptyStringSymbol extends StandardTerminalSymbol {
     }
 
     @Override
-    public boolean isInstance(String token) {
+    public boolean isInstance(Token token) {
         return true;
     }
 

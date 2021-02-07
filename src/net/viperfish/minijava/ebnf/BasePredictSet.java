@@ -8,12 +8,14 @@ import java.util.Objects;
 public abstract class BasePredictSet implements PredictionSet {
 
     private Symbol srcRule;
+    private int predictPoint;
     private Map<String, Collection<ParsableSymbol>> predictSymbols;
 
 
-    public BasePredictSet(Symbol srcRule, Map<String, Collection<ParsableSymbol>> predictSymbols) {
+    public BasePredictSet(Symbol srcRule, Map<String, Collection<ParsableSymbol>> predictSymbols, int predictPoint) {
         this.srcRule = srcRule;
         this.predictSymbols = new HashMap<>(predictSymbols);
+        this.predictPoint = predictPoint;
     }
 
     @Override
@@ -24,6 +26,11 @@ public abstract class BasePredictSet implements PredictionSet {
     @Override
     public Map<String, Collection<ParsableSymbol>> getPredictSets() {
         return new HashMap<>(this.predictSymbols);
+    }
+
+    @Override
+    public int getPredictPoint() {
+        return predictPoint;
     }
 
     @Override

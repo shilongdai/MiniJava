@@ -17,12 +17,12 @@ public class CompositeSymbol implements Symbol {
         this.symbols = new ArrayList<>(symbols);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("(");
+        sb.append("⟪");
         for (Symbol s : this.symbols) {
             sb.append(s.getName()).append(" ");
         }
         sb = new StringBuilder(sb.toString().trim());
-        sb.append(")");
+        sb.append("⟫");
         this.name = sb.toString();
     }
 

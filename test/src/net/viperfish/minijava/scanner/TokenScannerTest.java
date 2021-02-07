@@ -13,12 +13,12 @@ import java.util.List;
 
 public class TokenScannerTest {
 
-    private static final String[] TEST_FILES = new String[]{"testNextTokenBasic", "testNextTokenFullDeclare", "testNextTokenOperators", "testLineComment"};
+    private static final String[] TEST_FILES = new String[]{"scanner/testNextTokenBasic", "scanner/testNextTokenFullDeclare", "scanner/testNextTokenOperators", "scanner/testLineComment"};
 
     @Test
     public void testNextToken() throws IOException, ParsingException {
         for (String resources : TEST_FILES) {
-            try (FileInputStream inputStream = new FileInputStream(Paths.get("resources", resources).toFile())) {
+            try (FileInputStream inputStream = new FileInputStream(Paths.get("resources", "scanner", resources).toFile())) {
                 TokenScanner scanner = new TokenScanner(inputStream);
                 List<Token> tokens = new ArrayList<>();
                 while (scanner.hasNext()) {
@@ -30,7 +30,7 @@ public class TokenScannerTest {
                     parsed.append(t.getTokenType().toString()).append(" ");
                 }
                 String result = parsed.toString().trim();
-                String expected = new String(Files.readAllBytes(Paths.get("resources", resources + "Expected")));
+                String expected = new String(Files.readAllBytes(Paths.get("resources", "scanner", resources + "Expected")));
                 Assertions.assertEquals(expected, result);
             }
         }
@@ -38,7 +38,7 @@ public class TokenScannerTest {
 
     @Test()
     public void testBlockCommentFail() throws IOException, ParsingException {
-        try (FileInputStream in = new FileInputStream(Paths.get("resources", "badBlockComment").toFile())) {
+        try (FileInputStream in = new FileInputStream(Paths.get("resources", "scanner/badBlockComment").toFile())) {
             TokenScanner scanner = new TokenScanner(in);
             Assertions.assertThrows(ParsingException.class, scanner::nextToken);
         }
@@ -46,7 +46,7 @@ public class TokenScannerTest {
 
     @Test()
     public void testUnicodeChars() throws IOException, ParsingException {
-        try (FileInputStream in = new FileInputStream(Paths.get("resources", "badEncoding").toFile())) {
+        try (FileInputStream in = new FileInputStream(Paths.get("resources", "scanner/badEncoding").toFile())) {
             TokenScanner scanner = new TokenScanner(in);
             Assertions.assertThrows(ParsingException.class, scanner::nextToken);
         }
@@ -54,7 +54,7 @@ public class TokenScannerTest {
 
     @Test()
     public void testBadOperator() throws IOException, ParsingException {
-        try (FileInputStream in = new FileInputStream(Paths.get("resources", "badOperators").toFile())) {
+        try (FileInputStream in = new FileInputStream(Paths.get("resources", "scanner/badOperators").toFile())) {
             TokenScanner scanner = new TokenScanner(in);
             Assertions.assertThrows(ParsingException.class, () -> {
                 while (scanner.hasNext()) {
@@ -66,7 +66,7 @@ public class TokenScannerTest {
 
     @Test
     public void testBadDeclaration() throws IOException, ParsingException {
-        try (FileInputStream in = new FileInputStream(Paths.get("resources", "badDeclaration").toFile())) {
+        try (FileInputStream in = new FileInputStream(Paths.get("resources", "scanner/badDeclaration").toFile())) {
             TokenScanner scanner = new TokenScanner(in);
             while (scanner.hasNext()) {
                 scanner.nextToken();

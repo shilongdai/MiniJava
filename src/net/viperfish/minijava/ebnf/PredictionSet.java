@@ -11,5 +11,7 @@ public interface PredictionSet {
 
     public Map<String, Collection<ParsableSymbol>> getPredictSets();
 
+    public int getPredictPoint();
+
 }
 

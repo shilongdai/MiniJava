@@ -7,14 +7,21 @@ import java.util.Objects;
 public class WildCardSymbol implements Symbol {
 
     private Symbol src;
+    private String name;
 
     public WildCardSymbol(Symbol src) {
         this.src = src;
+        this.name = src.getName() + "*";
+    }
+
+    public WildCardSymbol(String name, Symbol src) {
+        this(src);
+        this.name = name;
     }
 
     @Override
     public String getName() {
-        return src.getName() + "*";
+        return this.name;
     }
 
     @Override

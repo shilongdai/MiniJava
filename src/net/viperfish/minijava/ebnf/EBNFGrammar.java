@@ -14,6 +14,31 @@ public class EBNFGrammar {
     private Collection<String> nonTerminalSymbols;
     private Collection<String> unnamedSymbols;
 
+    private Map<String, Collection<ParsableSymbol>> starterCache;
+    private Map<String, Collection<ParsableSymbol>> followerCache;
+    private Collection<String> nullableCache;
+
+    public static Collection<ParsableSymbol> unionIfEmpty(Collection<? extends Collection<ParsableSymbol>> chainedUnionIfEmpty) {
+        List<? extends Collection<ParsableSymbol>> ogList = new ArrayList<>(chainedUnionIfEmpty);
+        if (ogList.size() == 1) {
+            return new HashSet<>(ogList.get(0));
+        }
+        return unionIfEmpty(ogList.get(0), unionIfEmpty(ogList.subList(1, ogList.size())));
+    }
+
+    public static Collection<ParsableSymbol> unionIfEmpty(Collection<ParsableSymbol> a, Collection<ParsableSymbol> b) {
+        if (!a.contains(EMPTY_STRING)) {
+            return new HashSet<>(a);
+        } else {
+            Set<ParsableSymbol> result = new HashSet<>();
+            a = new HashSet<>(a);
+            a.remove(EMPTY_STRING);
+            result.addAll(a);
+            result.addAll(b);
+            return result;
+        }
+    }
+
     public EBNFGrammar() {
         symbols = new HashMap<>();
         startSymbols = new HashSet<>();
@@ -78,6 +103,9 @@ public class EBNFGrammar {
 
     public Collection<String> getNullableSymbols() {
         checkPlaceholders();
+        if(nullableCache != null) {
+            return new HashSet<>(nullableCache);
+        }
         Collection<String> currentNullable = new HashSet<>();
         Collection<String> prevNullable;
 
@@ -87,42 +115,29 @@ public class EBNFGrammar {
             currentNullable = new HashSet<>();
             for (String s : symbols.keySet()) {
                 Symbol symbol = symbols.get(s);
-                if (symbol == EMPTY_STRING) {
+                if(nullable(prevNullable, symbol)) {
                     currentNullable.add(s);
                 } else {
-                    if (terminalSymbols.contains(s)) {
-                        currentNullable.remove(s);
-                    } else if (symbol.isWildcard()) {
-                        currentNullable.add(s);
-                    } else if (symbol.isDecision()) {
-                        for (Symbol c : symbol.getExpression()) {
-                            if (prevNullable.contains(c.getName())) {
-                                currentNullable.add(s);
-                                break;
-                            }
-                        }
-                    } else {
-                        currentNullable.add(s);
-                        for (Symbol c : symbol.getExpression()) {
-                            if (!prevNullable.contains(c.getName())) {
-                                currentNullable.remove(s);
-                                break;
-                            }
-                        }
-                    }
+                    currentNullable.remove(s);
                 }
             }
         } while (!currentNullable.equals(prevNullable));
+        nullableCache = currentNullable;
         return currentNullable;
     }
 
     public Map<String, Collection<ParsableSymbol>> starterSets() {
         checkPlaceholders();
+        if(starterCache != null) {
+            return new HashMap<>(starterCache);
+        }
+
         Map<String, Collection<ParsableSymbol>> currentStarter = new HashMap<>();
         Map<String, Collection<ParsableSymbol>> prevStarter = null;
         Collection<String> nullable = getNullableSymbols();
         for (String s : symbols.keySet()) {
-            if (nullable.contains(s)) {
+            Symbol symbol = symbols.get(s);
+            if (nullable(nullable, symbol)) {
                 currentStarter.put(s, new HashSet<>(Collections.singletonList(EMPTY_STRING)));
             } else {
                 currentStarter.put(s, new HashSet<>());
@@ -140,71 +155,88 @@ public class EBNFGrammar {
             }
         } while (!currentStarter.equals(prevStarter));
 
+        starterCache = currentStarter;
         return currentStarter;
+    }
+
+    public Collection<ParsableSymbol> startersFor(List<Symbol> symbols) {
+        Symbol symbol = null;
+        if (symbols.isEmpty()) {
+            symbol = EMPTY_STRING;
+        } else if (symbols.size() == 1) {
+            symbol = symbols.get(0);
+        } else {
+            symbol = new CompositeSymbol(symbols);
+        }
+        return starters(starterSets(), symbol);
     }
 
     public Map<String, Collection<ParsableSymbol>> followers() {
         checkPlaceholders();
+        if(followerCache != null) {
+            return followerCache;
+        }
+
         Collection<String> nullable = getNullableSymbols();
-        Map<String, Collection<ParsableSymbol>> starters = starterSets();
+        Map<String, Collection<ParsableSymbol>> currentFollower = initFollowers();
+        Map<String, Collection<ParsableSymbol>> prevFollowers;
 
-        GetBaseFollowerSymbols getFollowerSymbols = new GetBaseFollowerSymbols(starters);
-        Set<String> walkedSet = new HashSet<>();
-        for (Symbol s : symbols.values()) {
-            walkSymbol(s, getFollowerSymbols, walkedSet);
+        for(Collection<ParsableSymbol> p : currentFollower.values()) {
+            p.remove(EMPTY_STRING);
         }
-        walkedSet.clear();
-
-        Map<String, Collection<ParsableSymbol>> currentFollower = getFollowerSymbols.getFollowing();
-        GetDecisionNodeFollowers decisionNodeFollowers = new GetDecisionNodeFollowers(currentFollower);
-
-        for (Symbol s : symbols.values()) {
-            walkSymbol(s, decisionNodeFollowers, walkedSet);
+        Set<String> unUsedSymbols = new HashSet<>(symbols.keySet());
+        unUsedSymbols.removeAll(currentFollower.keySet());for(String u : unUsedSymbols) {
+            currentFollower.put(u, new HashSet<>());
         }
-        walkedSet.clear();
-
-        for (Collection<ParsableSymbol> c : currentFollower.values()) {
-            c.remove(EMPTY_STRING);
-        }
-
-        GetRuleFollowingNullable getRules = new GetRuleFollowingNullable(nullable);
-        for (Symbol s : symbols.values()) {
-            walkSymbol(s, getRules, walkedSet);
-        }
-        Map<String, Collection<Symbol>> rules = getRules.getRules();
-        Map<String, Collection<ParsableSymbol>> prevFollower = null;
-
-        System.out.println("Rules: " + rules);
 
         do {
-            System.out.println("Iteration Follower: " + currentFollower);
-            prevFollower = currentFollower;
-            currentFollower = new HashMap<>();
-
-            for (String s : symbols.keySet()) {
-                Collection<ParsableSymbol> prevSet = prevFollower.getOrDefault(s, new HashSet<>());
-                Set<ParsableSymbol> newSet = new HashSet<>(prevSet);
-                for (Symbol p : rules.getOrDefault(s, new HashSet<>())) {
-                    Collection<ParsableSymbol> prev = prevFollower.get(p.getName());
-                    if (prev == null) {
-                        prev = new HashSet<>();
-                    }
-                    newSet.addAll(prev);
+            Map<String, Collection<ParsableSymbol>> testFollower = new HashMap<>();
+            for(Map.Entry<String, Collection<ParsableSymbol>> e : currentFollower.entrySet()) {
+                if(e.getKey().contains("Visibility")) {
+                    testFollower.put(e.getKey(), e.getValue());
                 }
-                currentFollower.put(s, newSet);
+            }
+            System.out.println("Iteration Follower: " + testFollower);
+            prevFollowers = currentFollower;
+            currentFollower = new HashMap<>();
+            for(String u : prevFollowers.keySet()) {
+                currentFollower.put(u, new HashSet<>(prevFollowers.get(u)));
             }
 
-            walkedSet.clear();
-            decisionNodeFollowers = new GetDecisionNodeFollowers(currentFollower);
-            for (Symbol s : symbols.values()) {
-                walkSymbol(s, decisionNodeFollowers, walkedSet);
+            for(Symbol symbol : this.symbols.values()) {
+                if (symbol.isDecision()) {
+                    continue;
+                } else if (symbol.isWildcard()) {
+                    continue;
+                } else {
+                    for (int i = 0; i < symbol.getExpression().size(); ++i) {
+                        List<Symbol> followingSymbols = symbol.getExpression().subList(i + 1, symbol.getExpression().size());
+                        Symbol following = null;
+                        if (followingSymbols.isEmpty()) {
+                            following = EMPTY_STRING;
+                        } else if (followingSymbols.size() == 1) {
+                            following = followingSymbols.get(0);
+                        } else {
+                            following = new CompositeSymbol(followingSymbols);
+                        }
+                        Symbol followed = symbol.getExpression().get(i);
+                        boolean followingNullable = nullable(nullable, following);
+                        if (followingNullable) {
+                            currentFollower.get(followed.getName()).addAll(prevFollowers.get(symbol.getName()));
+                            if(followed.isDecision() || followed.isWildcard()) {
+                                walkSymbol(followed, new PropagateFollowers(currentFollower));
+                            }
+                        }
+                    }
+                }
             }
-        } while (!currentFollower.equals(prevFollower));
+        } while (!prevFollowers.equals(currentFollower));
 
-        for (String s : startSymbols) {
-            currentFollower.get(s).add(EMPTY_STRING);
+        for(String u : unUsedSymbols) {
+            currentFollower.put(u, Collections.singletonList(EMPTY_STRING));
         }
 
+        followerCache = currentFollower;
         return currentFollower;
     }
 
@@ -212,100 +244,188 @@ public class EBNFGrammar {
         checkPlaceholders();
         Map<String, Collection<ParsableSymbol>> starters = starterSets();
         Map<String, Collection<ParsableSymbol>> followers = followers();
+        Collection<PredictionSet> sets = new HashSet<>();
 
-        Collection<Symbol> choices = getChoicePoints();
-        Collection<Symbol> reps = getRepetition();
+        sets.addAll(getPredictionSetsForDecisions(starters, followers));
+        sets.addAll(getPredictionSetForWildcards(starters, followers));
+
+        return sets;
+    }
+
+    public Map<String, Symbol> symbols() {
+        return new HashMap<>(this.symbols);
+    }
+
+    private Map<String, Collection<ParsableSymbol>> initFollowers() {
+        Map<String, Collection<ParsableSymbol>> starters = starterSets();
+        Map<String, Collection<ParsableSymbol>> currentFollower = new HashMap<>();
+        for(Symbol symbol : this.symbols.values()) {
+            if(symbol.isDecision()) {
+                continue;
+            } else if(symbol.isWildcard()) {
+                continue;
+            } else {
+                for (int i = 0; i < symbol.getExpression().size(); ++i) {
+                    List<Symbol> followingSymbols = symbol.getExpression().subList(i + 1, symbol.getExpression().size());
+                    Symbol following = null;
+                    if (followingSymbols.isEmpty()) {
+                        following = EMPTY_STRING;
+                    } else if (followingSymbols.size() == 1) {
+                        following = followingSymbols.get(0);
+                    } else {
+                        following = new CompositeSymbol(followingSymbols);
+                    }
+                    Symbol followed = symbol.getExpression().get(i);
+                    Collection<ParsableSymbol> followingStarters = starters(starters, following);
+                    if (!currentFollower.containsKey(followed.getName())) {
+                        currentFollower.put(followed.getName(), new HashSet<>());
+                    }
+                    currentFollower.get(followed.getName()).addAll(followingStarters);
+
+                    if (followed.isWildcard()) {
+                        Symbol repeated = followed.getExpression().get(0);
+                        Collection<ParsableSymbol> repeatedStarters = new HashSet<>(starters(starters, repeated));
+                        if (!currentFollower.containsKey(repeated.getName())) {
+                            currentFollower.put(repeated.getName(), new HashSet<>());
+                        }
+                        currentFollower.get(repeated.getName()).addAll(repeatedStarters);
+                        walkSymbol(followed, new PropagateFollowers(currentFollower));
+                    }
+                    if (followed.isDecision()) {
+                        walkSymbol(followed, new PropagateFollowers(currentFollower));
+                    }
+                }
+            }
+        }
+        return currentFollower;
+    }
+
+    private Collection<PredictionSet> getPredictionSetsForDecisions(Map<String, Collection<ParsableSymbol>> starters, Map<String, Collection<ParsableSymbol>> followers) {
+        Collection<ChoicePoint> choices = getChoicePoints();
         Collection<PredictionSet> result = new HashSet<>();
 
-
-        for (Symbol s : choices) {
+        for (ChoicePoint s : choices) {
             Map<String, Collection<ParsableSymbol>> predictSets = new HashMap<>();
-            if (s.isDecision()) {
-                for (Symbol a : s.getExpression()) {
+            if (s.getParentSymbol().isDecision()) {
+                for (Symbol a : s.getParentSymbol().getExpression()) {
                     Collection<ParsableSymbol> starter = starters(starters, a);
-                    Collection<ParsableSymbol> follower = followers.get(s.getName());
+                    Collection<ParsableSymbol> follower = followers.get(s.getParentSymbol().getName());
                     Collection<ParsableSymbol> predictSet = unionIfEmpty(starter, follower);
                     predictSets.put(a.getName(), predictSet);
                 }
             } else {
-                for (int i = 0; i < s.getExpression().size(); ++i) {
-                    Symbol current = s.getExpression().get(i);
-                    if (current.isDecision()) {
-                        for (Symbol a : current.getExpression()) {
-                            List<Symbol> symbolList = new ArrayList<>(s.getExpression().subList(i + 1, s.getExpression().size()));
-                            symbolList.add(0, a);
-                            Collection<ParsableSymbol> starter = starters(starters, new CompositeSymbol(symbolList));
-                            Collection<ParsableSymbol> follower = followers.get(s.getName());
-                            Collection<ParsableSymbol> predictSet = unionIfEmpty(starter, follower);
-                            predictSets.put(a.getName(), predictSet);
-                        }
-                    }
+                Symbol parentSymbol = s.getParentSymbol();
+                Symbol current = parentSymbol.getExpression().get(s.getSymbolPosition());
+                for (Symbol a : current.getExpression()) {
+                    List<Symbol> symbolList = new ArrayList<>(parentSymbol.getExpression().subList(s.getSymbolPosition() + 1, parentSymbol.getExpression().size()));
+                    symbolList.add(0, a);
+                    Collection<ParsableSymbol> starter = starters(starters, new CompositeSymbol(symbolList));
+                    Collection<ParsableSymbol> follower = followers.get(parentSymbol.getName());
+                    Collection<ParsableSymbol> predictSet = unionIfEmpty(starter, follower);
+                    predictSets.put(a.getName(), predictSet);
                 }
             }
-            result.add(new DecisionPredictSet(s, predictSets));
+            result.add(new DecisionPredictSet(s.getParentSymbol(), predictSets, s.getSymbolPosition()));
         }
 
-        for (Symbol s : reps) {
-            for (int i = 0; i < s.getExpression().size(); ++i) {
-                Symbol current = s.getExpression().get(i);
-                if (current.isWildcard()) {
-                    Map<String, Collection<ParsableSymbol>> predictSets = new HashMap<>();
-                    Collection<ParsableSymbol> predictCurrent = new HashSet<>(starters(starters, current.getExpression().get(0)));
-                    Collection<ParsableSymbol> predictLater = null;
-
-                    List<Symbol> symbolList = s.getExpression().subList(i + 1, s.getExpression().size());
-                    Symbol beta;
-                    if(symbolList.isEmpty()) {
-                        beta = EMPTY_STRING;
-                    } else if(symbolList.size() > 1) {
-                        beta = new CompositeSymbol(symbolList);
-                    } else {
-                        beta = symbolList.get(0);
-                    }
-                    Collection<ParsableSymbol> starter = starters(starters, beta);
-                    Collection<ParsableSymbol> follower = followers.get(s.getName());
-                    predictLater = unionIfEmpty(starter, follower);
-
-                    boolean isLL1 = true;
-                    if (predictCurrent.contains(EMPTY_STRING)) {
-                        isLL1 = false;
-                    }
-                    if (!Collections.disjoint(predictCurrent, predictLater)) {
-                        isLL1 = false;
-                    }
-
-                    predictSets.put(current.getExpression().get(0).getName(), predictCurrent);
-                    predictSets.put(beta.getName(), predictLater);
-                    result.add(new WildcardPredictSet(s, predictSets, isLL1));
-                }
-            }
-        }
         return result;
     }
 
-    private Collection<Symbol> getChoicePoints() {
-        Collection<Symbol> result = new HashSet<>();
-        for (Symbol s : this.symbols.values()) {
-            if (s.isDecision()) {
-                result.add(s);
+    private boolean nullable(Collection<String> prevNullable, Symbol symbol) {
+        if (symbol == EMPTY_STRING) {
+            return true;
+        } else {
+            if (terminalSymbols.contains(symbol.getName())) {
+                return false;
+            } else if (symbol.isWildcard()) {
+                return true;
+            } else if (symbol.isDecision()) {
+                for (Symbol c : symbol.getExpression()) {
+                    if (prevNullable.contains(c.getName())) {
+                        return true;
+                    }
+                }
+                return false;
             } else {
-                for (Symbol c : s.getExpression()) {
-                    if (c.isDecision() && unnamedSymbols.contains(c.getName())) {
-                        result.add(s);
+                boolean result = true;
+                for (Symbol c : symbol.getExpression()) {
+                    if (!prevNullable.contains(c.getName())) {
+                        result = false;
                         break;
                     }
                 }
+                return result;
+            }
+        }
+    }
+
+    private Collection<PredictionSet> getPredictionSetForWildcards(Map<String, Collection<ParsableSymbol>> starters, Map<String, Collection<ParsableSymbol>> followers) {
+        Collection<PredictionSet> result = new HashSet<>();
+        Collection<ChoicePoint> reps = getRepetition();
+
+        for (ChoicePoint choicePoint : reps) {
+            Symbol current = choicePoint.getParentSymbol().getExpression().get(choicePoint.getSymbolPosition());
+
+            Map<String, Collection<ParsableSymbol>> predictSets = new HashMap<>();
+            Collection<ParsableSymbol> predictCurrent = new HashSet<>(starters(starters, current.getExpression().get(0)));
+            Collection<ParsableSymbol> predictLater = null;
+
+            List<Symbol> symbolList = choicePoint.getParentSymbol().getExpression().subList(choicePoint.getSymbolPosition() + 1, choicePoint.getParentSymbol().getExpression().size());
+            Symbol beta;
+            if (symbolList.isEmpty()) {
+                beta = EMPTY_STRING;
+            } else if (symbolList.size() > 1) {
+                beta = new CompositeSymbol(symbolList);
+            } else {
+                beta = symbolList.get(0);
+            }
+            Collection<ParsableSymbol> starter = starters(starters, beta);
+            Collection<ParsableSymbol> follower = followers.get(choicePoint.getParentSymbol().getName());
+            predictLater = unionIfEmpty(starter, follower);
+
+            boolean isLL1 = true;
+            if (predictCurrent.contains(EMPTY_STRING)) {
+                isLL1 = false;
+            }
+            if (!Collections.disjoint(predictCurrent, predictLater)) {
+                isLL1 = false;
+            }
+
+            predictSets.put(current.getExpression().get(0).getName(), predictCurrent);
+            predictSets.put(beta.getName(), predictLater);
+            result.add(new WildcardPredictSet(choicePoint.getParentSymbol(), predictSets, choicePoint.getSymbolPosition(), isLL1));
+        }
+        return result;
+    }
+
+    private Collection<ChoicePoint> getChoicePoints() {
+        Collection<ChoicePoint> result = new HashSet<>();
+        Collection<String> registered = new HashSet<>();
+        for (Symbol s : this.symbols.values()) {
+            for (int i = 0; i < s.getExpression().size(); ++i) {
+                Symbol c = s.getExpression().get(i);
+                if (c.isDecision() && unnamedSymbols.contains(c.getName())) {
+                    result.add(new ChoicePoint(s, i));
+                    registered.add(c.getName());
+                    break;
+                }
+            }
+        }
+        for(Symbol s : this.symbols.values()) {
+            if(s.isDecision() && !registered.contains(s.getName())) {
+                result.add(new ChoicePoint(s, -1));
             }
         }
         return result;
     }
 
-    private Collection<Symbol> getRepetition() {
-        Collection<Symbol> result = new HashSet<>();
+    private Collection<ChoicePoint> getRepetition() {
+        Collection<ChoicePoint> result = new HashSet<>();
         for (Symbol s : this.symbols.values()) {
-            for (Symbol c : s.getExpression()) {
+            for (int i = 0; i < s.getExpression().size(); ++i) {
+                Symbol c = s.getExpression().get(i);
                 if (c.isWildcard()) {
-                    result.add(s);
+                    result.add(new ChoicePoint(s, i));
                     break;
                 }
             }
@@ -346,29 +466,6 @@ public class EBNFGrammar {
         return newSet;
     }
 
-    private <T> Collection<T> unionIfEmpty(Collection<? extends Collection<T>> chainedUnionIfEmpty) {
-        List<? extends Collection<T>> ogList = new ArrayList<>(chainedUnionIfEmpty);
-        if(ogList.size() == 0) {
-            System.out.println("WTF");
-        }
-        if (ogList.size() == 1) {
-            return new HashSet<>(ogList.get(0));
-        }
-        return unionIfEmpty(ogList.get(0), unionIfEmpty(ogList.subList(1, ogList.size())));
-    }
-
-    private <T> Collection<T> unionIfEmpty(Collection<T> a, Collection<T> b) {
-        if (!a.contains(EMPTY_STRING)) {
-            return new HashSet<>(a);
-        } else {
-            Set<T> result = new HashSet<>();
-            result.addAll(a);
-            result.addAll(b);
-            result.remove(EMPTY_STRING);
-            return result;
-        }
-    }
-
     private void walkSymbol(Symbol s, SymbolWalker walker) {
         Set<String> walked = new HashSet<>();
         walkSymbol(s, walker, walked);
@@ -380,10 +477,8 @@ public class EBNFGrammar {
         }
         walker.process(s);
         walked.add(s.getName());
-        for (Symbol next : s.getExpression()) {
-            if(next instanceof LookUpSymbol) {
-                continue;
-            }
+        List<Symbol> next2Scan = s.getExpression();
+        for (Symbol next : next2Scan) {
             walkSymbol(next, walker, walked);
         }
     }
@@ -419,57 +514,17 @@ public class EBNFGrammar {
         }
     }
 
-    // TODO: Address where if there are several item in wildcard, the final item, also fix decision items
-    private class GetBaseFollowerSymbols implements SymbolWalker {
-
-        private Map<String, Collection<ParsableSymbol>> following;
-        private Map<String, Collection<ParsableSymbol>> starters;
-
-        public GetBaseFollowerSymbols(Map<String, Collection<ParsableSymbol>> starters) {
-            following = new HashMap<>();
-            this.starters = starters;
-        }
-
-        public Map<String, Collection<ParsableSymbol>> getFollowing() {
-            return following;
-        }
-
-        @Override
-        public void process(Symbol current) {
-            if (current.isDecision()) {
-                return;
-            }
-            if (current.isWildcard() && current.getExpression().size() == 1) {
-                Symbol embedded = current.getExpression().get(0);
-                if (!following.containsKey(embedded.getName())) {
-                    following.put(embedded.getName(), new HashSet<>());
-                }
-                following.get(embedded.getName()).addAll(starters.get(embedded.getName()));
-            } else {
-                for (int i = 1; i < current.getExpression().size(); ++i) {
-                    Symbol followed = current.getExpression().get(i - 1);
-                    if (!following.containsKey(followed.getName())) {
-                        following.put(followed.getName(), new HashSet<>());
-                    }
-                    List<Symbol> followers = current.getExpression().subList(i, current.getExpression().size());
-                    Collection<ParsableSymbol> result = starters(this.starters, new CompositeSymbol(followers));
-                    following.get(followed.getName()).addAll(result);
-                }
-            }
-        }
-    }
-
-    private class GetDecisionNodeFollowers implements SymbolWalker {
+    private class PropagateFollowers implements SymbolWalker {
 
         private Map<String, Collection<ParsableSymbol>> following;
 
-        public GetDecisionNodeFollowers(Map<String, Collection<ParsableSymbol>> following) {
+        public PropagateFollowers(Map<String, Collection<ParsableSymbol>> following) {
             this.following = following;
         }
 
         @Override
         public void process(Symbol current) {
-            if (!current.isDecision()) {
+            if (!current.isDecision() && !current.isWildcard()) {
                 return;
             }
 
@@ -479,58 +534,6 @@ public class EBNFGrammar {
                     following.put(s.getName(), new HashSet<>());
                 }
                 following.get(s.getName()).addAll(parentFollowing);
-            }
-        }
-    }
-
-    private class GetRuleFollowingNullable implements SymbolWalker {
-
-        private Map<String, Collection<Symbol>> rules;
-        private Collection<String> nullable;
-
-        public GetRuleFollowingNullable(Collection<String> nullable) {
-            rules = new HashMap<>();
-            this.nullable = nullable;
-        }
-
-        public Map<String, Collection<Symbol>> getRules() {
-            return rules;
-        }
-
-        @Override
-        public void process(Symbol current) {
-            if (current.isDecision()) {
-                return;
-            }
-            if (current.isWildcard() && current.getExpression().size() == 1) {
-                Symbol embedded = current.getExpression().get(0);
-                if (nullable.contains(embedded.getName())) {
-                    if (!rules.containsKey(embedded.getName())) {
-                        rules.put(embedded.getName(), new HashSet<>());
-                    }
-                    rules.get(embedded.getName()).add(embedded);
-                }
-            } else {
-                for (int i = 0; i < current.getExpression().size() - 1; ++i) {
-                    Symbol checking = current.getExpression().get(i);
-                    if (!rules.containsKey(checking.getName())) {
-                        rules.put(checking.getName(), new HashSet<>());
-                    }
-                    rules.get(checking.getName()).add(current);
-                    for (int j = i + 1; j < current.getExpression().size(); ++j) {
-                        Symbol toCheck = current.getExpression().get(j);
-                        if (!nullable.contains(toCheck.getName())) {
-                            rules.get(checking.getName()).remove(current);
-                        }
-                    }
-                }
-                if (!current.getExpression().isEmpty()) {
-                    Symbol finalSymbol = current.getExpression().get(current.getExpression().size() - 1);
-                    if (!rules.containsKey(finalSymbol.getName())) {
-                        rules.put(finalSymbol.getName(), new HashSet<>());
-                    }
-                    rules.get(finalSymbol.getName()).add(current);
-                }
             }
         }
     }
@@ -550,7 +553,10 @@ public class EBNFGrammar {
 
         @Override
         public List<Symbol> getExpression() {
-            return symbols.get(name).getExpression();
+            if(symbols.get(name) != null) {
+                return symbols.get(name).getExpression();
+            }
+            return new ArrayList<>();
         }
 
         @Override

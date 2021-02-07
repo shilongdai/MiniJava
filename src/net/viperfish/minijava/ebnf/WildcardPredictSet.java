@@ -7,8 +7,8 @@ public class WildcardPredictSet extends BasePredictSet {
 
     private boolean LL1;
 
-    public WildcardPredictSet(Symbol srcRule, Map<String, Collection<ParsableSymbol>> predictSymbols, boolean LL1) {
-        super(srcRule, predictSymbols);
+    public WildcardPredictSet(Symbol srcRule, Map<String, Collection<ParsableSymbol>> predictSymbols, int predictPoint, boolean LL1) {
+        super(srcRule, predictSymbols, predictPoint);
         this.LL1 = LL1;
     }
 
