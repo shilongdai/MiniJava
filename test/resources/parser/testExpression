@@ -1,0 +1,19 @@
+class TestExpression {
+
+    public static void main(int[] argv, int argc) {
+        int sum10 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10;
+        int sumLetter = a - a.b + a.b.c * b.c.e;
+
+        int refExp = a[i * j + c];
+        boolean comp = a * b * c == (a * b) * c;
+        comp = (a + b) * c == ( a * c ) + (b * c);
+
+        int c = -2 * 1 - c + --10;
+        boolean mentalGymnastic = !(a == !b) == c && !d;
+        TestExpression[] id = new TestExpression[10];
+        boolean test = math.sqrt(math.power(a, 2) + math.power(b, 2)) == (a + b);
+        int testOps = -a * b + c / d && e || f > g  < c == d  <= e >= f != f;
+        int unixHackerMod = this.dotProduct(Vector.ZERO) + Sneed.test(1) + Sneed.test[0];
+    }
+
+}

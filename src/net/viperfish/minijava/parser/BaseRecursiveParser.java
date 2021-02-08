@@ -6,6 +6,7 @@ import net.viperfish.minijava.scanner.ParsingException;
 import net.viperfish.minijava.scanner.Token;
 import net.viperfish.minijava.scanner.TokenScanner;
 
+import javax.naming.NamingEnumeration;
 import java.io.IOException;
 import java.util.*;
 

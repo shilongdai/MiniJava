@@ -182,18 +182,29 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         Symbol stmtLF = new DecisionPointSymbol(stmtLFList);
         statementList.add(new CompositeSymbol(Arrays.asList(tHis, dotIdContinue, stmtLF, semi)));
         statementList.add(new CompositeSymbol(Arrays.asList(new DecisionPointSymbol(Arrays.asList(Boolean, intType)), id, eq, expression, semi)));
-        List<Symbol> factoredTypeRefL = new ArrayList<>();
-        List<Symbol> factoredTypeRefLDec = new ArrayList<>();
-        factoredTypeRefLDec.add(EBNFGrammar.EMPTY_STRING);
-        factoredTypeRefLDec.add(new CompositeSymbol(Arrays.asList(lsqb, expression, rsqb)));
-        factoredTypeRefLDec.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
-        factoredTypeRefL.add(dotIdContinue);
-        factoredTypeRefL.add(new DecisionPointSymbol(factoredTypeRefLDec));
-        List<Symbol> factoredTypeRefR = new ArrayList<>();
-        factoredTypeRefR.add(emptyOrSqb);
-        factoredTypeRefR.add(id);
-        Symbol factoredStmtPart = new CompositeSymbol( Arrays.asList(id, new DecisionPointSymbol("FactoredStatement", Arrays.asList(new CompositeSymbol("RefBracketExp", factoredTypeRefL), new CompositeSymbol("TypeBracketExp", factoredTypeRefR))), eq, expression, semi));
-        statementList.add(factoredStmtPart);
+        // ( e | [exp] )
+        List<Symbol> emptyOrBExpList = new ArrayList<>();
+        emptyOrBExpList.add(EBNFGrammar.EMPTY_STRING);
+        emptyOrBExpList.add(new CompositeSymbol(Arrays.asList(lsqb, expression, rsqb)));
+        Symbol emptyOrBExp = new DecisionPointSymbol(emptyOrBExpList);
+        // (e | [exp]) = exp;
+        List<Symbol> referenceEqExpList = new ArrayList<>();
+        referenceEqExpList.add(emptyOrBExp);
+        referenceEqExpList.addAll(Arrays.asList(eq, expression, semi));
+        Symbol referenceEqExpSymbol = new CompositeSymbol(referenceEqExpList);
+        // (e | [exp]) = exp; | ( Args? );
+        List<Symbol> idLfFactoredList = new ArrayList<>();
+        idLfFactoredList.add(referenceEqExpSymbol);
+        idLfFactoredList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb, semi)));
+        Symbol idLfFactoredDecisionSymbol = new DecisionPointSymbol(idLfFactoredList);
+        Symbol idLfFactoredSymbol = new CompositeSymbol("RefStmt", Arrays.asList(dotIdContinue, idLfFactoredDecisionSymbol));
+        // ( e | []) id = exp;
+        List<Symbol> idRfFactoredList = new ArrayList<>();
+        idRfFactoredList.add(emptyOrSqb);
+        idRfFactoredList.addAll(Arrays.asList(id, eq, expression, semi));
+        Symbol idRfFactoredSymbol = new CompositeSymbol("TypeStmt", idRfFactoredList);
+        Symbol idFactoredDecision = new DecisionPointSymbol("RefOrType", Arrays.asList(idLfFactoredSymbol, idRfFactoredSymbol));
+        statementList.add(new CompositeSymbol(Arrays.asList(id, idFactoredDecision)));
         statementList.add(new CompositeSymbol(Arrays.asList(reTurn, new DecisionPointSymbol(Arrays.asList(expression, EBNFGrammar.EMPTY_STRING)), semi)));
         List<Symbol> ifStmtList = new ArrayList<>();
         ifStmtList.add(If);
@@ -272,7 +283,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         voidDeclaration.add(Void);
         voidDeclaration.add(id);
         voidDeclaration.addAll(methodDistinguished);
-        classDecList.add(new CompositeSymbol(Arrays.asList(visibility, access, new DecisionPointSymbol(Arrays.asList(new CompositeSymbol(typedDeclaration), new CompositeSymbol(voidDeclaration))))));
+        Symbol decomposedDecs = new CompositeSymbol(Arrays.asList(visibility, access, new DecisionPointSymbol(Arrays.asList(new CompositeSymbol(typedDeclaration), new CompositeSymbol(voidDeclaration)))));
+        classDecList.add(new WildCardSymbol(decomposedDecs));
         classDecList.add(rlb);
 
         Symbol classDeclaration = new CompositeSymbol("ClassDeclaration", classDecList);
@@ -300,16 +312,16 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                     }
                 }
             }
-        } else if(decidingPoint.getName().equals("FactoredStatement")) {
-            System.out.println("Non LL1 deciding [ Expression ] vs []");
+        } else if(decidingPoint.getName().equals("RefOrType")) {
             if(getToken().getTokenType() != TokenType.LEFT_SQ_BRACKET) {
                 System.out.println("No ambiguity, proceeding normally");
                 super.handleDecisionPoint(symbols);
             } else {
                 Token peeked = peek();
                 if(peeked.getTokenType() == TokenType.RIGHT_SQ_BRACKET) {
+                    System.out.println(decidingPoint);
                     for(Symbol s : decidingPoint.getExpression()) {
-                        if(s.getName().equals("TypeBracketExp")) {
+                        if(s.getName().equals("TypeStmt")) {
                             System.out.println("Peeked ], handling as []");
                             parse(Collections.singletonList(s));
                             break;
@@ -317,7 +329,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                     }
                 } else {
                     for(Symbol s : decidingPoint.getExpression()) {
-                        if(s.getName().equals("RefBracketExp")) {
+                        if(s.getName().equals("RefStmt")) {
                             System.out.println("Did not peek ], handling as ref");
                             parse(Collections.singletonList(s));
                             break;

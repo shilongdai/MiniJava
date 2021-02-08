@@ -1,0 +1,42 @@
+class Matrix {
+
+    public static Matrix EMPTY;
+    private static Matrix I1;
+    private static Matrix I2;
+    private static Matrix I3;
+
+    private int[] elements;
+    private int rows;
+    private int columns;
+
+    private boolean isSymmetrical;
+    private boolean isSquare;
+
+    public void setElement(int i, int j, int value) {
+
+    }
+
+    public int getElement(int i, int j) {
+    }
+
+    public int getRow() {
+
+    }
+
+    public int getColumn() {
+
+    }
+
+    private static Matrix transpose(Matrix m) {
+
+    }
+
+    private int trace(Matrix m) {
+
+    }
+
+    private void init() {
+
+    }
+
+}

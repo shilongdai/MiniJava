@@ -17,13 +17,14 @@ import java.util.List;
 
 public class EBNFParserTest {
 
-    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration"};
+    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement"};
     private static final String[] TEST_FAIL = new String[] {};
 
     @Test
     public void testParserSuccess() throws IOException, ParsingException, GrammarException {
         for (String resources : TEST_SUCCESS) {
             try (FileInputStream inputStream = new FileInputStream(Paths.get("resources", "parser",  resources).toFile())) {
+                System.out.println("\n\n");
                 TokenScanner scanner = new TokenScanner(inputStream);
                 RecursiveParser parser = new MiniJavaEBNFGrammarParser(scanner);
                 parser.init();
