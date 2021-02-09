@@ -24,7 +24,6 @@ public class EBNFParserTest {
     public void testParserSuccess() throws IOException, ParsingException, GrammarException {
         for (String resources : TEST_SUCCESS) {
             try (FileInputStream inputStream = new FileInputStream(Paths.get("resources", "parser",  resources).toFile())) {
-                System.out.println("\n\n");
                 TokenScanner scanner = new TokenScanner(inputStream);
                 RecursiveParser parser = new MiniJavaEBNFGrammarParser(scanner);
                 parser.init();

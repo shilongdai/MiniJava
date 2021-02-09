@@ -13,7 +13,7 @@ import java.util.List;
 
 public class TokenScannerTest {
 
-    private static final String[] TEST_FILES = new String[]{"scanner/testNextTokenBasic", "scanner/testNextTokenFullDeclare", "scanner/testNextTokenOperators", "scanner/testLineComment"};
+    private static final String[] TEST_FILES = new String[]{"testNextTokenBasic", "testNextTokenFullDeclare", "testNextTokenOperators", "testLineComment"};
 
     @Test
     public void testNextToken() throws IOException, ParsingException {

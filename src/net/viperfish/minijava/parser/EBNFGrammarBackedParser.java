@@ -1,5 +1,7 @@
 package net.viperfish.minijava.parser;
 
+import net.viperfish.minijava.Compiler;
+import net.viperfish.minijava.CompilerGlobal;
 import net.viperfish.minijava.ebnf.EBNFGrammar;
 import net.viperfish.minijava.ebnf.ParsableSymbol;
 import net.viperfish.minijava.ebnf.Symbol;
@@ -38,18 +40,24 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
     @Override
     protected void handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol decision = symbols.get(0);
-        System.out.println("Choices: " + decision.getExpression());
+        if(CompilerGlobal.DEBUG_3) {
+            System.out.println("Choices: " + decision.getExpression());
+        }
         Collection<ParsableSymbol> possibleSymbols = new HashSet<>();
         for (Symbol child : decision.getExpression()) {
             List<Symbol> symbolsPartition = new ArrayList<>();
             symbolsPartition.add(child);
             symbolsPartition.addAll(symbols.subList(1, symbols.size()));
             Collection<ParsableSymbol> symToCheck = EBNFGrammar.unionIfEmpty(grammar.startersFor(symbolsPartition), getFollowers(decision));
-            System.out.println("Checking if symbols falls into: " + child);
+            if(CompilerGlobal.DEBUG_3) {
+                System.out.println("Checking if symbols falls into: " + child);
+            }
             for (ParsableSymbol p : symToCheck) {
                 possibleSymbols.add(p);
                 if (p.isInstance(getToken())) {
-                    System.out.println(String.format("Choosing %s because of %s", child, p.getName()));
+                    if(CompilerGlobal.DEBUG_3) {
+                        System.out.println(String.format("Choosing %s because of %s", child, p.getName()));
+                    }
                     parse(Collections.singletonList(child));
                     return;
                 }
@@ -62,19 +70,27 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
     protected void handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol rep = symbols.get(0);
         Symbol gamma = rep.getExpression().get(0);
-        System.out.println("Handling Repeating: " + gamma.getName());
+        if(CompilerGlobal.DEBUG_3) {
+            System.out.println("Handling Repeating: " + gamma.getName());
+        }
         Collection<ParsableSymbol> starters = getStarters(Collections.singletonList(gamma));
-        System.out.println("Indicator for repeat: " + starters);
+        if(CompilerGlobal.DEBUG_3) {
+            System.out.println("Indicator for repeat: " + starters);
+        }
         boolean keepGoing = false;
         for (ParsableSymbol p : starters) {
             if (p.isInstance(getToken())) {
                 keepGoing = true;
-                System.out.println("Keep going because of: " + p.getName());
+                if(CompilerGlobal.DEBUG_3) {
+                    System.out.println("Keep going because of: " + p.getName());
+                }
                 break;
             }
         }
-        if(!keepGoing) {
-            System.out.println("Wildcard -> Empty String");
+        if(CompilerGlobal.DEBUG_3) {
+            if (!keepGoing) {
+                System.out.println("Wildcard -> Empty String");
+            }
         }
         while (keepGoing) {
             parse(Collections.singletonList(gamma));
@@ -82,12 +98,16 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
             for (ParsableSymbol p : starters) {
                 if (p.isInstance(getToken())) {
                     keepGoing = true;
-                    System.out.println("Keep going because of: " + p.getName());
+                    if(CompilerGlobal.DEBUG_3) {
+                        System.out.println("Keep going because of: " + p.getName());
+                    }
                     break;
                 }
             }
-            if(!keepGoing) {
-                System.out.println(String.format("Stopped Processing wildcard %s, current token %s", gamma.getName(), getToken().getSpelling()));
+            if(CompilerGlobal.DEBUG_3) {
+                if (!keepGoing) {
+                    System.out.println(String.format("Stopped Processing wildcard %s, current token %s", gamma.getName(), getToken().getSpelling()));
+                }
             }
         }
     }

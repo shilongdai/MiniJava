@@ -1,5 +1,6 @@
 package net.viperfish.minijava.parser;
 
+import net.viperfish.minijava.CompilerGlobal;
 import net.viperfish.minijava.ebnf.*;
 import net.viperfish.minijava.scanner.ParsingException;
 import net.viperfish.minijava.scanner.Token;
@@ -302,11 +303,15 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
     protected void handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol decidingPoint = symbols.get(0);
         if(decidingPoint.getName().equals("TrailingElse")) {
-            System.out.println("Non LL1 deciding trailing else");
+            if(CompilerGlobal.DEBUG_3) {
+                System.out.println("Non LL1 deciding trailing else");
+            }
             if(getToken().getTokenType() == TokenType.ELSE) {
                 for(Symbol s : decidingPoint.getExpression()) {
                     if(s.getName().equals("ElseStmt")) {
-                        System.out.println("Encountered Else, greedily proceeding");
+                        if(CompilerGlobal.DEBUG_3) {
+                            System.out.println("Encountered Else, greedily proceeding");
+                        }
                         parse(Collections.singletonList(s));
                         break;
                     }
@@ -314,15 +319,18 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
             }
         } else if(decidingPoint.getName().equals("RefOrType")) {
             if(getToken().getTokenType() != TokenType.LEFT_SQ_BRACKET) {
-                System.out.println("No ambiguity, proceeding normally");
+                if(CompilerGlobal.DEBUG_3) {
+                    System.out.println("No ambiguity, proceeding normally");
+                }
                 super.handleDecisionPoint(symbols);
             } else {
                 Token peeked = peek();
                 if(peeked.getTokenType() == TokenType.RIGHT_SQ_BRACKET) {
-                    System.out.println(decidingPoint);
                     for(Symbol s : decidingPoint.getExpression()) {
                         if(s.getName().equals("TypeStmt")) {
-                            System.out.println("Peeked ], handling as []");
+                            if(CompilerGlobal.DEBUG_3) {
+                                System.out.println("Peeked ], handling as []");
+                            }
                             parse(Collections.singletonList(s));
                             break;
                         }
@@ -330,7 +338,9 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                 } else {
                     for(Symbol s : decidingPoint.getExpression()) {
                         if(s.getName().equals("RefStmt")) {
-                            System.out.println("Did not peek ], handling as ref");
+                            if(CompilerGlobal.DEBUG_3) {
+                                System.out.println("Did not peek ], handling as ref");
+                            }
                             parse(Collections.singletonList(s));
                             break;
                         }
@@ -346,11 +356,15 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
     protected void handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol wildCard = symbols.get(0);
         if(wildCard.getName().equals("BinopExpression")) {
-            System.out.println("Non LL1 deciding binops");
+            if(CompilerGlobal.DEBUG_3) {
+                System.out.println("Non LL1 deciding binops");
+            }
             Symbol repeatingBinop = wildCard.getExpression().get(0);
             ParsableSymbol binop = (ParsableSymbol) repeatingBinop.getExpression().get(0);
             while (binop.isInstance(getToken())) {
-                System.out.println("Found following operator, proceeding");
+                if(CompilerGlobal.DEBUG_3) {
+                    System.out.println("Found following operator, proceeding");
+                }
                 parse(Collections.singletonList(repeatingBinop));
             }
         } else {
