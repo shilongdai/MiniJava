@@ -13,6 +13,12 @@ class TestStatement {
                 feed();
             }
         }
+        {
+            doesStuff(1, 2, 3, 5+5);
+            {
+                doMoreStuf();
+            }
+        }
     }
 
     private static int gcd(int x, int y) {

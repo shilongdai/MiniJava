@@ -110,7 +110,6 @@ public class EBNFGrammar {
         Collection<String> prevNullable;
 
         do {
-            System.out.println("Iteration Nullable: " + currentNullable);
             prevNullable = currentNullable;
             currentNullable = new HashSet<>();
             for (String s : symbols.keySet()) {
@@ -144,7 +143,6 @@ public class EBNFGrammar {
             }
         }
         do {
-            System.out.println("Iteration Starter: " + currentStarter);
             prevStarter = currentStarter;
             currentStarter = new HashMap<>();
 
@@ -190,13 +188,6 @@ public class EBNFGrammar {
         }
 
         do {
-            Map<String, Collection<ParsableSymbol>> testFollower = new HashMap<>();
-            for(Map.Entry<String, Collection<ParsableSymbol>> e : currentFollower.entrySet()) {
-                if(e.getKey().contains("Visibility")) {
-                    testFollower.put(e.getKey(), e.getValue());
-                }
-            }
-            System.out.println("Iteration Follower: " + testFollower);
             prevFollowers = currentFollower;
             currentFollower = new HashMap<>();
             for(String u : prevFollowers.keySet()) {
@@ -462,8 +453,7 @@ public class EBNFGrammar {
         for (Symbol p : symbol.getExpression()) {
             prevSets.add(prevStarter.get(p.getName()));
         }
-        Set<ParsableSymbol> newSet = (Set<ParsableSymbol>) unionIfEmpty(prevSets);
-        return newSet;
+        return (Set<ParsableSymbol>) unionIfEmpty(prevSets);
     }
 
     private void walkSymbol(Symbol s, SymbolWalker walker) {
@@ -514,11 +504,11 @@ public class EBNFGrammar {
         }
     }
 
-    private class PropagateFollowers implements SymbolWalker {
+    private static class PropagateFollowers implements SymbolWalker {
 
         private Map<String, Collection<ParsableSymbol>> following;
 
-        public PropagateFollowers(Map<String, Collection<ParsableSymbol>> following) {
+        PropagateFollowers(Map<String, Collection<ParsableSymbol>> following) {
             this.following = following;
         }
 
@@ -542,7 +532,7 @@ public class EBNFGrammar {
 
         private String name;
 
-        public LookUpSymbol(String name) {
+        LookUpSymbol(String name) {
             this.name = name;
         }
 

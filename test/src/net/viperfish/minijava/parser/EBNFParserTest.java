@@ -17,7 +17,7 @@ import java.util.List;
 
 public class EBNFParserTest {
 
-    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement"};
+    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement", "testComprehensive"};
     private static final String[] TEST_FAIL = new String[] {};
 
     @Test
