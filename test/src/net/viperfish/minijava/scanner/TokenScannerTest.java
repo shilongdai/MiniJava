@@ -13,11 +13,12 @@ import java.util.List;
 
 public class TokenScannerTest {
 
-    private static final String[] TEST_FILES = new String[]{"testNextTokenBasic", "testNextTokenFullDeclare", "testNextTokenOperators", "testLineComment"};
+    private static final String[] TEST_FILES = new String[]{"testNextTokenBasic", "testNextTokenFullDeclare", "testNextTokenOperators", "testLineComment", "pass119", "pass120"};
 
     @Test
     public void testNextToken() throws IOException, ParsingException {
         for (String resources : TEST_FILES) {
+            System.out.println("Testing: " + resources);
             try (FileInputStream inputStream = new FileInputStream(Paths.get("resources", "scanner", resources).toFile())) {
                 TokenScanner scanner = new TokenScanner(inputStream);
                 List<Token> tokens = new ArrayList<>();

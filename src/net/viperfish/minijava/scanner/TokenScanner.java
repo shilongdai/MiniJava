@@ -159,7 +159,7 @@ public class TokenScanner {
     }
 
     private int skipBlockComment(InputStream inputStream) throws IOException {
-        StringBuilder slider = new StringBuilder("*");
+        StringBuilder slider = new StringBuilder("$");
         int next = input.read();
         int position = 0;
         if (next == -1) {
