@@ -8,7 +8,10 @@ import net.viperfish.minijava.scanner.TokenScanner;
 import net.viperfish.minijava.scanner.TokenType;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
 
@@ -17,7 +20,6 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
     static {
         GRAMMAR = new EBNFGrammar();
 
-        Collection<String> binopSpellings = Arrays.asList(">", "<", "==", "<=", ">=", "!=", "&&", "||", "+", "-", "*", "/");
         // terminals
         ParsableSymbol id = new TokenTypeParsibleSymbol(TokenType.ID);
         GRAMMAR.registerTerminalSymbol(id);
@@ -35,8 +37,18 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         GRAMMAR.registerTerminalSymbol(rpb);
         ParsableSymbol unop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("!", "-"));
         GRAMMAR.registerTerminalSymbol(unop);
-        ParsableSymbol binop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, binopSpellings);
-        GRAMMAR.registerTerminalSymbol(binop);
+        ParsableSymbol multop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("*", "/"));
+        GRAMMAR.registerTerminalSymbol(multop);
+        ParsableSymbol addop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("+", "-"));
+        GRAMMAR.registerTerminalSymbol(addop);
+        ParsableSymbol relop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("<", "<=", ">", ">="));
+        GRAMMAR.registerTerminalSymbol(relop);
+        ParsableSymbol eqop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("==", "!="));
+        GRAMMAR.registerTerminalSymbol(eqop);
+        ParsableSymbol cjop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Collections.singletonList("&&"));
+        GRAMMAR.registerTerminalSymbol(cjop);
+        ParsableSymbol djop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Collections.singletonList("||"));
+        GRAMMAR.registerTerminalSymbol(djop);
         ParsableSymbol num = new TokenTypeParsibleSymbol(TokenType.NUM);
         GRAMMAR.registerTerminalSymbol(num);
         ParsableSymbol True = new TokenTypeParsibleSymbol(TokenType.TRUE);
@@ -119,18 +131,24 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                   | num | true | false
                   | new ( id () | int [ Expression ] | id [ Expression ] )
          */
-        List<Symbol> expressionListNoRecursion = new ArrayList<>();
-        List<Symbol> expressionList = new ArrayList<>();
+
+        /*
+        BExp :=
+            Reference ( ε | [ Exp ] | (ArgList?) ) |
+            num | true | false |
+            new ( id() | int[ Exp ] | id[ Exp ] )
+         */
+        List<Symbol> bExpList = new ArrayList<>();
         // apply left factorization Reference ( [ Expression ] | ( ArgumentList? ) | ε )
         List<Symbol> factorizedExpressionList = new ArrayList<>();
         Symbol argListOrEmpty = new DecisionPointSymbol(Arrays.asList(GRAMMAR.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
         factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lsqb, GRAMMAR.placeholderName("Expression"), rsqb)));
         factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
         factorizedExpressionList.add(EBNFGrammar.EMPTY_STRING);
-        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
-        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(unop, GRAMMAR.placeholderName("Expression"))));
-        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(lpb, GRAMMAR.placeholderName("Expression"), rpb)));
-        expressionListNoRecursion.add(num); expressionListNoRecursion.add(True); expressionListNoRecursion.add(False);
+        bExpList.add(new CompositeSymbol(Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
+        bExpList.add(num);
+        bExpList.add(True);
+        bExpList.add(False);
         // new ( id () | int [ Expression ] | id [ Expression ] ) -> new ( id (() | [ Expression ]) | int [ Expression ])
         List<Symbol> rhsNewList = new ArrayList<>();
         List<Symbol> rhsFactoredList = new ArrayList<>();
@@ -140,12 +158,79 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         rhsNewList.add(new CompositeSymbol(Arrays.asList(Int, lsqb, GRAMMAR.placeholderName("Expression"), rsqb)));
         Symbol rhsNew = new DecisionPointSymbol(rhsNewList);
         Symbol newDec = new CompositeSymbol(Arrays.asList(New, rhsNew));
-        expressionListNoRecursion.add(newDec);
-        // eliminate left recursion E = E binop E -> X(binop E)*
-        DecisionPointSymbol expressionNonRecursive = new DecisionPointSymbol(expressionListNoRecursion);
-        expressionList.add(expressionNonRecursive);
-        expressionList.add(new WildCardSymbol("BinopExpression", new CompositeSymbol("NextBinop", Arrays.asList(binop, GRAMMAR.placeholderName("Expression")))));
+        bExpList.add(newDec);
+        Symbol bExp = new DecisionPointSymbol("BExp", bExpList);
 
+        /*
+        PExp :=
+            (Exp) | BExp
+         */
+        List<Symbol> pExpList = new ArrayList<>();
+        pExpList.add(new CompositeSymbol(Arrays.asList(lpb, GRAMMAR.placeholderName("Expression"), rpb)));
+        pExpList.add(bExp);
+        Symbol pExp = new DecisionPointSymbol("PExp", pExpList);
+
+        /*
+        UExp :=
+            unop Exp | PExp
+         */
+        List<Symbol> uExpList = new ArrayList<>();
+        uExpList.add(pExp);
+        uExpList.add(new CompositeSymbol(Arrays.asList(unop, GRAMMAR.placeholderName("Expression"))));
+        Symbol uExp = new DecisionPointSymbol("UExp", uExpList);
+
+        /*
+        MExp :=
+            UExp ( multop UExp )*
+         */
+        List<Symbol> mExpList = new ArrayList<>();
+        mExpList.add(uExp);
+        mExpList.add(new WildCardSymbol("MExpRep", new CompositeSymbol(Arrays.asList(multop, uExp))));
+        Symbol mExp = new CompositeSymbol("MExp", mExpList);
+
+        /*
+        AExp :=
+            MExp ( addop MExp )*
+         */
+        List<Symbol> aExpList = new ArrayList<>();
+        aExpList.add(mExp);
+        aExpList.add(new WildCardSymbol("AExpRep", new CompositeSymbol(Arrays.asList(addop, mExp))));
+        Symbol aExp = new CompositeSymbol("AExp", aExpList);
+
+        /*
+        RExp :=
+            AExp ( relop AExp )*
+         */
+        List<Symbol> rExpList = new ArrayList<>();
+        rExpList.add(aExp);
+        rExpList.add(new WildCardSymbol("RExpRep", new CompositeSymbol(Arrays.asList(relop, aExp))));
+        Symbol rExp = new CompositeSymbol("RExp", rExpList);
+
+        /*
+        EqExp :=
+            RExp ( eqop RExp )*
+         */
+        List<Symbol> eqExpList = new ArrayList<>();
+        eqExpList.add(rExp);
+        eqExpList.add(new WildCardSymbol("EqExpRep", new CompositeSymbol(Arrays.asList(eqop, rExp))));
+        Symbol eqExp = new CompositeSymbol("EqExp", eqExpList);
+
+        /*
+        CExp :=
+            EqExp ( cjop EqExp )*
+         */
+        List<Symbol> cExpList = new ArrayList<>();
+        cExpList.add(eqExp);
+        cExpList.add(new WildCardSymbol("CExpRep", new CompositeSymbol(Arrays.asList(cjop, eqExp))));
+        Symbol cExp = new CompositeSymbol("CExp", cExpList);
+
+        /*
+        Exp :=
+            CExp ( djop CExp )*
+         */
+        List<Symbol> expressionList = new ArrayList<>();
+        expressionList.add(cExp);
+        expressionList.add(new WildCardSymbol("ExpRep", new CompositeSymbol(Arrays.asList(djop, cExp))));
         Symbol expression = new CompositeSymbol("Expression", expressionList);
         GRAMMAR.registerNonTerminalSymbol(expression);
 
@@ -355,20 +440,21 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
     @Override
     protected void handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol wildCard = symbols.get(0);
-        if(wildCard.getName().equals("BinopExpression")) {
-            if(CompilerGlobal.DEBUG_3) {
-                System.out.println("Non LL1 deciding binops");
-            }
-            Symbol repeatingBinop = wildCard.getExpression().get(0);
-            ParsableSymbol binop = (ParsableSymbol) repeatingBinop.getExpression().get(0);
-            while (binop.isInstance(getToken())) {
-                if(CompilerGlobal.DEBUG_3) {
-                    System.out.println("Found following operator, proceeding");
-                }
-                parse(Collections.singletonList(repeatingBinop));
-            }
+        if (Arrays.asList("AExpRep", "MExpRep", "ExpRep", "EqExpRep", "CExpRep", "RExpRep").contains(wildCard.getName())) {
+            handleRepeatedExpressions(wildCard.getExpression().get(0));
         } else {
             super.handleRepeatingPoint(symbols);
         }
     }
+
+    private void handleRepeatedExpressions(Symbol repeated) throws ParsingException, GrammarException, IOException {
+        ParsableSymbol operator = (ParsableSymbol) repeated.getExpression().get(0);
+        while (operator.isInstance(getToken())) {
+            if (CompilerGlobal.DEBUG_3) {
+                System.out.println("Found following operator, proceeding");
+            }
+            parse(Collections.singletonList(repeated));
+        }
+    }
+
 }

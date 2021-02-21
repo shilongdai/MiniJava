@@ -1,7 +1,5 @@
 package net.viperfish.minijava.ebnf;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Parameter;
 import java.util.*;
 
 public class TestEBNFGrammer {
@@ -48,8 +46,20 @@ public class TestEBNFGrammer {
         grammer.registerTerminalSymbol(rpb);
         ParsableSymbol unop = new StandardTerminalSymbol("unop");
         grammer.registerTerminalSymbol(unop);
-        ParsableSymbol binop = new StandardTerminalSymbol("binop");
-        grammer.registerTerminalSymbol(binop);
+//        ParsableSymbol binop = new StandardTerminalSymbol("binop");
+//        grammer.registerTerminalSymbol(binop);
+        ParsableSymbol multop = new StandardTerminalSymbol("multop");
+        grammer.registerTerminalSymbol(multop);
+        ParsableSymbol addop = new StandardTerminalSymbol("addop");
+        grammer.registerTerminalSymbol(addop);
+        ParsableSymbol relop = new StandardTerminalSymbol("relop");
+        grammer.registerTerminalSymbol(relop);
+        ParsableSymbol eqop = new StandardTerminalSymbol("eqop");
+        grammer.registerTerminalSymbol(eqop);
+        ParsableSymbol cjop = new StandardTerminalSymbol("cjop");
+        grammer.registerTerminalSymbol(cjop);
+        ParsableSymbol djop = new StandardTerminalSymbol("djop");
+        grammer.registerTerminalSymbol(djop);
         ParsableSymbol num = new StandardTerminalSymbol("num");
         grammer.registerTerminalSymbol(num);
         ParsableSymbol True = new StandardTerminalSymbol("true");
@@ -132,18 +142,24 @@ public class TestEBNFGrammer {
                   | num | true | false
                   | new ( id () | int [ Expression ] | id [ Expression ] )
          */
-        List<Symbol> expressionListNoRecursion = new ArrayList<>();
-        List<Symbol> expressionList = new ArrayList<>();
+
+        /*
+        BExp :=
+            Reference ( ε | [ Exp ] | (ArgList?) ) |
+            num | true | false |
+            new ( id() | int[ Exp ] | id[ Exp ] )
+         */
+        List<Symbol> bExpList = new ArrayList<>();
         // apply left factorization Reference ( [ Expression ] | ( ArgumentList? ) | ε )
         List<Symbol> factorizedExpressionList = new ArrayList<>();
         Symbol argListOrEmpty = new DecisionPointSymbol(Arrays.asList(grammer.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
         factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lsqb, grammer.placeholderName("Expression"), rsqb)));
         factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
         factorizedExpressionList.add(EBNFGrammar.EMPTY_STRING);
-        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
-        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(unop, grammer.placeholderName("Expression"))));
-        expressionListNoRecursion.add(new CompositeSymbol(Arrays.asList(lpb, grammer.placeholderName("Expression"), rpb)));
-        expressionListNoRecursion.add(num); expressionListNoRecursion.add(True); expressionListNoRecursion.add(False);
+        bExpList.add(new CompositeSymbol(Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
+        bExpList.add(num);
+        bExpList.add(True);
+        bExpList.add(False);
         // new ( id () | int [ Expression ] | id [ Expression ] ) -> new ( id (() | [ Expression ]) | int [ Expression ])
         List<Symbol> rhsNewList = new ArrayList<>();
         List<Symbol> rhsFactoredList = new ArrayList<>();
@@ -153,12 +169,79 @@ public class TestEBNFGrammer {
         rhsNewList.add(new CompositeSymbol(Arrays.asList(Int, lsqb, grammer.placeholderName("Expression"), rsqb)));
         Symbol rhsNew = new DecisionPointSymbol(rhsNewList);
         Symbol newDec = new CompositeSymbol(Arrays.asList(New, rhsNew));
-        expressionListNoRecursion.add(newDec);
-        // eliminate left recursion E = E binop E -> X(binop E)*
-        DecisionPointSymbol expressionNonRecursive = new DecisionPointSymbol(expressionListNoRecursion);
-        expressionList.add(expressionNonRecursive);
-        expressionList.add(new WildCardSymbol("BinopExpression", new CompositeSymbol("NextBinop", Arrays.asList(binop, grammer.placeholderName("Expression")))));
+        bExpList.add(newDec);
+        Symbol bExp = new DecisionPointSymbol("BExp", bExpList);
 
+        /*
+        PExp :=
+            (Exp) | BExp
+         */
+        List<Symbol> pExpList = new ArrayList<>();
+        pExpList.add(new CompositeSymbol(Arrays.asList(lpb, grammer.placeholderName("Expression"), rpb)));
+        pExpList.add(bExp);
+        Symbol pExp = new DecisionPointSymbol("PExp", pExpList);
+
+        /*
+        UExp :=
+            unop Exp | PExp
+         */
+        List<Symbol> uExpList = new ArrayList<>();
+        uExpList.add(pExp);
+        uExpList.add(new CompositeSymbol(Arrays.asList(unop, grammer.placeholderName("Expression"))));
+        Symbol uExp = new DecisionPointSymbol("UExp", uExpList);
+
+        /*
+        MExp :=
+            UExp ( multop UExp )*
+         */
+        List<Symbol> mExpList = new ArrayList<>();
+        mExpList.add(uExp);
+        mExpList.add(new WildCardSymbol("MExpRep", new CompositeSymbol(Arrays.asList(multop, uExp))));
+        Symbol mExp = new CompositeSymbol("MExp", mExpList);
+
+        /*
+        AExp :=
+            MExp ( addop MExp )*
+         */
+        List<Symbol> aExpList = new ArrayList<>();
+        aExpList.add(mExp);
+        aExpList.add(new WildCardSymbol("AExpRep", new CompositeSymbol(Arrays.asList(addop, mExp))));
+        Symbol aExp = new CompositeSymbol("AExp", aExpList);
+
+        /*
+        RExp :=
+            AExp ( relop AExp )*
+         */
+        List<Symbol> rExpList = new ArrayList<>();
+        rExpList.add(aExp);
+        rExpList.add(new WildCardSymbol("RExpRep", new CompositeSymbol(Arrays.asList(relop, aExp))));
+        Symbol rExp = new CompositeSymbol("RExp", rExpList);
+
+        /*
+        EqExp :=
+            RExp ( eqop RExp )*
+         */
+        List<Symbol> eqExpList = new ArrayList<>();
+        eqExpList.add(rExp);
+        eqExpList.add(new WildCardSymbol("EqExpRep", new CompositeSymbol(Arrays.asList(eqop, rExp))));
+        Symbol eqExp = new CompositeSymbol("EqExp", eqExpList);
+
+        /*
+        CExp :=
+            EqExp ( cjop EqExp )*
+         */
+        List<Symbol> cExpList = new ArrayList<>();
+        cExpList.add(eqExp);
+        cExpList.add(new WildCardSymbol("CExpRep", new CompositeSymbol(Arrays.asList(cjop, eqExp))));
+        Symbol cExp = new CompositeSymbol("CExp", cExpList);
+
+        /*
+        Exp :=
+            CExp ( djop CExp )*
+         */
+        List<Symbol> expressionList = new ArrayList<>();
+        expressionList.add(cExp);
+        expressionList.add(new WildCardSymbol("ExpRep", new CompositeSymbol(Arrays.asList(djop, cExp))));
         Symbol expression = new CompositeSymbol("Expression", expressionList);
         grammer.registerNonTerminalSymbol(expression);
 
