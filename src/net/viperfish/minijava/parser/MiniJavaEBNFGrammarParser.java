@@ -1,6 +1,7 @@
 package net.viperfish.minijava.parser;
 
 import net.viperfish.minijava.CompilerGlobal;
+import net.viperfish.minijava.ast.AST;
 import net.viperfish.minijava.ebnf.*;
 import net.viperfish.minijava.scanner.ParsingException;
 import net.viperfish.minijava.scanner.Token;
@@ -8,10 +9,7 @@ import net.viperfish.minijava.scanner.TokenScanner;
 import net.viperfish.minijava.scanner.TokenType;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
 
@@ -381,12 +379,13 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
     }
 
     public MiniJavaEBNFGrammarParser(TokenScanner scanner) {
-        super(scanner, GRAMMAR);
+        super(scanner, GRAMMAR, new HashMap<>());
     }
 
     @Override
-    protected void handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
+    protected AST handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol decidingPoint = symbols.get(0);
+        ASTConstructor ctor = getASTConstructor(decidingPoint);
         if(decidingPoint.getName().equals("TrailingElse")) {
             if(CompilerGlobal.DEBUG_3) {
                 System.out.println("Non LL1 deciding trailing else");
@@ -397,17 +396,17 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                         if(CompilerGlobal.DEBUG_3) {
                             System.out.println("Encountered Else, greedily proceeding");
                         }
-                        parse(Collections.singletonList(s));
-                        break;
+                        return ctor.buildTree(s, parse(Collections.singletonList(s)));
                     }
                 }
+                throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
             }
         } else if(decidingPoint.getName().equals("RefOrType")) {
             if(getToken().getTokenType() != TokenType.LEFT_SQ_BRACKET) {
                 if(CompilerGlobal.DEBUG_3) {
                     System.out.println("No ambiguity, proceeding normally");
                 }
-                super.handleDecisionPoint(symbols);
+                return super.handleDecisionPoint(symbols);
             } else {
                 Token peeked = peek();
                 if(peeked.getTokenType() == TokenType.RIGHT_SQ_BRACKET) {
@@ -416,45 +415,53 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                             if(CompilerGlobal.DEBUG_3) {
                                 System.out.println("Peeked ], handling as []");
                             }
-                            parse(Collections.singletonList(s));
-                            break;
+                            return ctor.buildTree(s, parse(Collections.singletonList(s)));
                         }
                     }
+                    throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
                 } else {
                     for(Symbol s : decidingPoint.getExpression()) {
                         if(s.getName().equals("RefStmt")) {
                             if(CompilerGlobal.DEBUG_3) {
                                 System.out.println("Did not peek ], handling as ref");
                             }
-                            parse(Collections.singletonList(s));
-                            break;
+                            return ctor.buildTree(s, parse(Collections.singletonList(s)));
                         }
                     }
+                    throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
                 }
             }
         } else {
-            super.handleDecisionPoint(symbols);
+            return super.handleDecisionPoint(symbols);
         }
+        return null;
     }
 
     @Override
-    protected void handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
+    protected AST handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol wildCard = symbols.get(0);
         if (Arrays.asList("AExpRep", "MExpRep", "ExpRep", "EqExpRep", "CExpRep", "RExpRep").contains(wildCard.getName())) {
-            handleRepeatedExpressions(wildCard.getExpression().get(0));
+            ASTConstructor ctor = getASTConstructor(wildCard);
+            List<AST> childASTs = handleRepeatedExpressions(wildCard.getExpression().get(0));
+            return ctor.buildTree(wildCard, childASTs);
         } else {
-            super.handleRepeatingPoint(symbols);
+            return super.handleRepeatingPoint(symbols);
         }
     }
 
-    private void handleRepeatedExpressions(Symbol repeated) throws ParsingException, GrammarException, IOException {
+    private List<AST> handleRepeatedExpressions(Symbol repeated) throws ParsingException, GrammarException, IOException {
         ParsableSymbol operator = (ParsableSymbol) repeated.getExpression().get(0);
+        ASTConstructor ctor = getASTConstructor(repeated);
+        List<AST> result = new ArrayList<>();
         while (operator.isInstance(getToken())) {
             if (CompilerGlobal.DEBUG_3) {
                 System.out.println("Found following operator, proceeding");
             }
-            parse(Collections.singletonList(repeated));
+            List<AST> childs = parse(Collections.singletonList(repeated));
+            AST childAST = ctor.buildTree(repeated, childs);
+            result.add(childAST);
         }
+        return result;
     }
 
 }

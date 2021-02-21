@@ -1,13 +1,16 @@
 package net.viperfish.minijava.parser;
 
 import net.viperfish.minijava.CompilerGlobal;
+import net.viperfish.minijava.ast.*;
 import net.viperfish.minijava.ebnf.ParsableSymbol;
 import net.viperfish.minijava.ebnf.Symbol;
 import net.viperfish.minijava.scanner.ParsingException;
 import net.viperfish.minijava.scanner.Token;
 import net.viperfish.minijava.scanner.TokenScanner;
+import net.viperfish.minijava.scanner.TokenType;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -28,11 +31,12 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
     }
 
     @Override
-    public void parse(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
+    public List<AST> parse(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         if (symbols.isEmpty()) {
-            return;
+            return new ArrayList<>();
         }
         Symbol next = symbols.get(0);
+        List<AST> result = new ArrayList<>();
         if (CompilerGlobal.DEBUG_3) {
             System.out.println("Looking At Symbol: " + next.getName());
         }
@@ -40,39 +44,60 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
             if (CompilerGlobal.DEBUG_2) {
                 System.out.println("Accepting: " + next.getName());
             }
-            accept((ParsableSymbol) next);
-            parse(symbols.subList(1, symbols.size()));
+            Terminal t = accept((ParsableSymbol) next);
+            List<AST> other = parse(symbols.subList(1, symbols.size()));
+            if(t != null) {
+                result.add(t);
+            }
+            result.addAll(other);
         } else if (next.isDecision()) {
             if (CompilerGlobal.DEBUG_3) {
                 System.out.println("Deciding:");
             }
-            handleDecisionPoint(symbols);
-            parse(symbols.subList(1, symbols.size()));
+            AST decisionAST = handleDecisionPoint(symbols);
+            List<AST> others = parse(symbols.subList(1, symbols.size()));
+            if(decisionAST != null) {
+                result.add(decisionAST);
+            }
+            result.addAll(others);
         } else if (next.isWildcard()) {
             if (CompilerGlobal.DEBUG_3) {
                 System.out.println("Handling Repeat");
             }
-            handleRepeatingPoint(symbols);
-            parse(symbols.subList(1, symbols.size()));
+            AST repeatAST = handleRepeatingPoint(symbols);
+            List<AST> others = parse(symbols.subList(1, symbols.size()));
+            if(repeatAST != null) {
+                result.add(repeatAST);
+            }
+            result.addAll(others);
         } else {
             if (CompilerGlobal.DEBUG_3) {
                 System.out.println("Analysing sub-components");
             }
-            parse(next.getExpression());
-            parse(symbols.subList(1, symbols.size()));
+            List<AST> childASTs = parse(next.getExpression());
+            ASTConstructor constructor = getASTConstructor(next);
+            AST nextAST = constructor.buildTree(next, childASTs);
+            List<AST> others = parse(symbols.subList(1, symbols.size()));
+            if(nextAST != null) {
+                result.add(nextAST);
+            }
+            result.addAll(others);
         }
         if (CompilerGlobal.DEBUG_3) {
             System.out.println("Finished with: " + next.getName());
         }
+        return result;
     }
 
     protected abstract Collection<ParsableSymbol> getFollowers(Symbol symbol);
 
     protected abstract Collection<ParsableSymbol> getStarters(List<Symbol> symbols);
 
-    protected abstract void handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException;
+    protected abstract AST handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException;
 
-    protected abstract void handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException;
+    protected abstract AST handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException;
+
+    protected abstract ASTConstructor getASTConstructor(Symbol currentSymbol);
 
     protected Token getToken() {
         return this.currentToken;
@@ -85,18 +110,30 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
         return peeked;
     }
 
-    protected boolean accept(ParsableSymbol symbol) throws GrammarException, IOException, ParsingException {
+    protected Terminal accept(ParsableSymbol symbol) throws GrammarException, IOException, ParsingException {
         if (CompilerGlobal.DEBUG_2) {
             System.out.println(String.format("Comparing: %s vs %s", symbol.getName(), currentToken.getSpelling()));
         }
         if (symbol.isInstance(currentToken)) {
+            Token toConvert = currentToken;
             if (peeked != null) {
                 currentToken = peeked;
                 peeked = null;
             } else {
                 currentToken = scanner.nextToken();
             }
-            return true;
+
+            if(toConvert.getTokenType().equals(TokenType.TRUE) || toConvert.getTokenType().equals(TokenType.FALSE)) {
+                return new BooleanLiteral(toConvert);
+            } else if(toConvert.getTokenType().equals(TokenType.ID)) {
+                return new Identifier(toConvert);
+            } else if(toConvert.getTokenType().equals(TokenType.NUM)) {
+                return new IntLiteral(toConvert);
+            } else if(toConvert.getTokenType().equals(TokenType.OPERATOR)) {
+                return new Operator(toConvert);
+            } else {
+                return null;
+            }
         } else {
             throw new GrammarException(symbol, currentToken);
         }

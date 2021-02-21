@@ -1,7 +1,9 @@
 package net.viperfish.minijava.parser;
 
-import net.viperfish.minijava.Compiler;
 import net.viperfish.minijava.CompilerGlobal;
+import net.viperfish.minijava.ast.AST;
+import net.viperfish.minijava.ast.DefaultAST;
+import net.viperfish.minijava.ast.Terminal;
 import net.viperfish.minijava.ebnf.EBNFGrammar;
 import net.viperfish.minijava.ebnf.ParsableSymbol;
 import net.viperfish.minijava.ebnf.Symbol;
@@ -14,17 +16,21 @@ import java.util.*;
 public class EBNFGrammarBackedParser extends BaseRecursiveParser {
 
     private EBNFGrammar grammar;
+    private Map<String, ASTConstructor> constructors;
 
-    public EBNFGrammarBackedParser(TokenScanner scanner, EBNFGrammar grammar) {
+    public EBNFGrammarBackedParser(TokenScanner scanner, EBNFGrammar grammar, Map<String, ASTConstructor> constructors) {
         super(scanner);
         this.grammar = grammar;
+        this.constructors = constructors;
     }
 
     @Override
-    public void parse() throws IOException, ParsingException, GrammarException {
+    public AST parse() throws IOException, ParsingException, GrammarException {
         String startingSymbolName = grammar.getStartSymbols().iterator().next();
         Symbol startingSymbol = grammar.symbols().get(startingSymbolName);
-        parse(Collections.singletonList(startingSymbol));
+        ASTConstructor startConstructor = getASTConstructor(startingSymbol);
+        List<AST> tempList = parse(Collections.singletonList(startingSymbol));
+        return startConstructor.buildTree(startingSymbol, tempList);
     }
 
     @Override
@@ -38,7 +44,7 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
     }
 
     @Override
-    protected void handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
+    protected AST handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol decision = symbols.get(0);
         if(CompilerGlobal.DEBUG_3) {
             System.out.println("Choices: " + decision.getExpression());
@@ -58,8 +64,9 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
                     if(CompilerGlobal.DEBUG_3) {
                         System.out.println(String.format("Choosing %s because of %s", child, p.getName()));
                     }
-                    parse(Collections.singletonList(child));
-                    return;
+                    List<AST> childASTs = parse(Collections.singletonList(child));
+                    ASTConstructor childCtor = getASTConstructor(child);
+                    return childCtor.buildTree(child, childASTs);
                 }
             }
         }
@@ -67,9 +74,13 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
     }
 
     @Override
-    protected void handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
+    protected AST handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
         Symbol rep = symbols.get(0);
         Symbol gamma = rep.getExpression().get(0);
+        ASTConstructor wildCardCtor = getASTConstructor(rep);
+        ASTConstructor gammaCtor = getASTConstructor(gamma);
+        List<AST> repASTs = new ArrayList<>();
+
         if(CompilerGlobal.DEBUG_3) {
             System.out.println("Handling Repeating: " + gamma.getName());
         }
@@ -93,7 +104,10 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
             }
         }
         while (keepGoing) {
-            parse(Collections.singletonList(gamma));
+            List<AST> childs = parse(Collections.singletonList(gamma));
+            AST childAST = gammaCtor.buildTree(gamma, childs);
+            repASTs.add(childAST);
+
             keepGoing = false;
             for (ParsableSymbol p : starters) {
                 if (p.isInstance(getToken())) {
@@ -110,13 +124,32 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
                 }
             }
         }
+
+        return wildCardCtor.buildTree(rep, repASTs);
     }
 
     @Override
-    protected boolean accept(ParsableSymbol symbol) throws GrammarException, IOException, ParsingException {
+    protected ASTConstructor getASTConstructor(Symbol currentSymbol) {
+        if(constructors.containsKey(currentSymbol.getName())) {
+            return constructors.get(currentSymbol.getName());
+        } else {
+            return new DefaultASTConstructor();
+        }
+    }
+
+    @Override
+    protected Terminal accept(ParsableSymbol symbol) throws GrammarException, IOException, ParsingException {
         if(symbol == EBNFGrammar.EMPTY_STRING) {
-            return true;
+            return null;
         }
         return super.accept(symbol);
+    }
+
+    private static class DefaultASTConstructor implements ASTConstructor {
+
+        @Override
+        public AST buildTree(Symbol current, List<AST> parsed) {
+            return new DefaultAST(null, current, parsed);
+        }
     }
 }
