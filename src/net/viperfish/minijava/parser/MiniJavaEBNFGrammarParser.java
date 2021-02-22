@@ -14,9 +14,122 @@ import java.util.*;
 public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
 
     private static final EBNFGrammar GRAMMAR;
+    private static final Map<String, ASTConstructor> AST_CONSTRUCTORS;
 
     static {
-        GRAMMAR = new EBNFGrammar();
+        GRAMMAR = constructGrammar();
+        AST_CONSTRUCTORS = new HashMap<>();
+
+        // Pass Overs
+        AST_CONSTRUCTORS.put("CallArguments", new CallArgumentsPassoverConstructor());
+        AST_CONSTRUCTORS.put("ExpBracketed", new ExpBracketedPassOverConstructor());
+        AST_CONSTRUCTORS.put("PExpEnclosed", new PExpEnclosedPassOverConstructor());
+        AST_CONSTRUCTORS.put("PExp", new PExpPassOverConstructor());
+
+        // Expressions - Operators
+        AST_CONSTRUCTORS.put("MExp", new OperatorExpressionASTConstructor());
+        AST_CONSTRUCTORS.put("AExp", new OperatorExpressionASTConstructor());
+        AST_CONSTRUCTORS.put("RExp", new OperatorExpressionASTConstructor());
+        AST_CONSTRUCTORS.put("EqExp", new OperatorExpressionASTConstructor());
+        AST_CONSTRUCTORS.put("CExp", new OperatorExpressionASTConstructor());
+        AST_CONSTRUCTORS.put("Expression", new OperatorExpressionASTConstructor());
+
+        // Expressions - Misc
+        AST_CONSTRUCTORS.put("RefExtendedExp", new RefExtendedExpASTConstructor());
+        AST_CONSTRUCTORS.put("Reference", new StandardReferenceRefConstructor());
+        AST_CONSTRUCTORS.put("UExpEnclosed", new UExpEnclosedASTConstructor());
+        AST_CONSTRUCTORS.put("BExp", new BaseExpressionASTConstructor());
+
+    }
+
+    public MiniJavaEBNFGrammarParser(TokenScanner scanner) {
+        super(scanner, GRAMMAR, AST_CONSTRUCTORS);
+    }
+
+    @Override
+    protected AST handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
+        Symbol decidingPoint = symbols.get(0);
+        ASTConstructor ctor = getASTConstructor(decidingPoint);
+        if(decidingPoint.getName().equals("TrailingElse")) {
+            if(CompilerGlobal.DEBUG_3) {
+                System.out.println("Non LL1 deciding trailing else");
+            }
+            if(getToken().getTokenType() == TokenType.ELSE) {
+                for(Symbol s : decidingPoint.getExpression()) {
+                    if(s.getName().equals("ElseStmt")) {
+                        if(CompilerGlobal.DEBUG_3) {
+                            System.out.println("Encountered Else, greedily proceeding");
+                        }
+                        return ctor.buildTree(s, parse(Collections.singletonList(s)));
+                    }
+                }
+                throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
+            }
+        } else if(decidingPoint.getName().equals("Statement")) {
+            if(getToken().getTokenType() != TokenType.ID) {
+                if(CompilerGlobal.DEBUG_3) {
+                    System.out.println("No ambiguity, proceeding normally");
+                }
+                return super.handleDecisionPoint(symbols);
+            } else {
+                List<Token> bracketCheck = peek(2);
+                if(bracketCheck.get(0).getTokenType() == TokenType.LEFT_SQ_BRACKET && bracketCheck.get(1).getTokenType() == TokenType.RIGHT_SQ_BRACKET) {
+                    for(Symbol s : decidingPoint.getExpression()) {
+                        if(s.getName().equals("TypeInitAssign")) {
+                            if(CompilerGlobal.DEBUG_3) {
+                                System.out.println("Peeked [], handling as Type");
+                            }
+                            return ctor.buildTree(s, parse(Collections.singletonList(s)));
+                        }
+                    }
+                    throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
+                } else {
+                    for(Symbol s : decidingPoint.getExpression()) {
+                        if(s.getName().equals("RefFactoredStmt")) {
+                            if(CompilerGlobal.DEBUG_3) {
+                                System.out.println("Did not peek [], handling as Reference");
+                            }
+                            return ctor.buildTree(s, parse(Collections.singletonList(s)));
+                        }
+                    }
+                    throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
+                }
+            }
+        } else {
+            return super.handleDecisionPoint(symbols);
+        }
+        return null;
+    }
+
+    @Override
+    protected AST handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
+        Symbol wildCard = symbols.get(0);
+        if (Arrays.asList("AExpRep", "MExpRep", "ExpRep", "EqExpRep", "CExpRep", "RExpRep").contains(wildCard.getName())) {
+            ASTConstructor ctor = getASTConstructor(wildCard);
+            List<AST> childASTs = handleRepeatedExpressions(wildCard.getExpression().get(0));
+            return ctor.buildTree(wildCard, childASTs);
+        } else {
+            return super.handleRepeatingPoint(symbols);
+        }
+    }
+
+    private List<AST> handleRepeatedExpressions(Symbol repeated) throws ParsingException, GrammarException, IOException {
+        ParsableSymbol operator = (ParsableSymbol) repeated.getExpression().get(0);
+        ASTConstructor ctor = getASTConstructor(repeated);
+        List<AST> result = new ArrayList<>();
+        while (operator.isInstance(getToken())) {
+            if (CompilerGlobal.DEBUG_3) {
+                System.out.println("Found following operator, proceeding");
+            }
+            List<AST> childs = parse(Collections.singletonList(repeated));
+            AST childAST = ctor.buildTree(repeated, childs);
+            result.add(childAST);
+        }
+        return result;
+    }
+
+    private static EBNFGrammar constructGrammar() {
+        EBNFGrammar GRAMMAR = new EBNFGrammar();
 
         // terminals
         ParsableSymbol id = new TokenTypeParsibleSymbol(TokenType.ID);
@@ -95,8 +208,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         // Reference ::= id | this | Reference . id
         List<Symbol> referenceList = new ArrayList<>();
         // id | this | Reference . id -> (id | this) (. id)*
-        referenceList.add(new DecisionPointSymbol(Arrays.asList(tHis, id)));
-        Symbol dotIdContinue = new WildCardSymbol(new CompositeSymbol(Arrays.asList(dot, id)));
+        referenceList.add(new DecisionPointSymbol("thisOrId", Arrays.asList(tHis, id)));
+        Symbol dotIdContinue = new WildCardSymbol("dotIdChain", new CompositeSymbol("dotId", Arrays.asList(dot, id)));
         referenceList.add(dotIdContinue);
 
         Symbol reference = new CompositeSymbol("Reference", referenceList);
@@ -108,10 +221,10 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         List<Symbol> typeArrayDec = new ArrayList<>();
         typeArrayDec.add(lsqb);
         typeArrayDec.add(rsqb);
-        Symbol emptyOrSqb = new DecisionPointSymbol(Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol(typeArrayDec)));
+        Symbol emptyOrSqb = new DecisionPointSymbol("emptyOrSqBrackets", Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol(typeArrayDec)));
         typeList.add(Boolean);
-        Symbol intType = new CompositeSymbol(Arrays.asList(Int, emptyOrSqb));
-        Symbol idType = new CompositeSymbol(Arrays.asList(id, emptyOrSqb));
+        Symbol intType = new CompositeSymbol("IntRelatedType", Arrays.asList(Int, emptyOrSqb));
+        Symbol idType = new CompositeSymbol("UserRelatedType", Arrays.asList(id, emptyOrSqb));
         typeList.add(intType);
         typeList.add(idType);
 
@@ -140,8 +253,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         // apply left factorization Reference ( [ Expression ] | ( ArgumentList? ) | ε )
         List<Symbol> factorizedExpressionList = new ArrayList<>();
         Symbol argListOrEmpty = new DecisionPointSymbol(Arrays.asList(GRAMMAR.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
-        factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lsqb, GRAMMAR.placeholderName("Expression"), rsqb)));
-        factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
+        factorizedExpressionList.add(new CompositeSymbol("ExpBracketed", Arrays.asList(lsqb, GRAMMAR.placeholderName("Expression"), rsqb)));
+        factorizedExpressionList.add(new CompositeSymbol("CallArguments", Arrays.asList(lpb, argListOrEmpty, rpb)));
         factorizedExpressionList.add(EBNFGrammar.EMPTY_STRING);
         bExpList.add(new CompositeSymbol(Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
         bExpList.add(num);
@@ -254,42 +367,20 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         List<Symbol> statementList = new ArrayList<>();
         List<Symbol> stmtWildCard = new ArrayList<>();
         stmtWildCard.add(llb);
-        stmtWildCard.add(new WildCardSymbol(GRAMMAR.placeholderName("Statement")));
+        stmtWildCard.add(new WildCardSymbol("StatementList", GRAMMAR.placeholderName("Statement")));
         stmtWildCard.add(rlb);
-        statementList.add(new CompositeSymbol(stmtWildCard));
-        // apply left factorization Reference ( = Expression | [ Expression ] = Expression | ( ArgumentList? ) ) ;
-        // then eliminates reference and type to ensure LL1
-        List<Symbol> stmtLFList = new ArrayList<>();
-        stmtLFList.add(new CompositeSymbol(Arrays.asList(eq, expression)));
-        stmtLFList.add(new CompositeSymbol(Arrays.asList(lsqb, expression, rsqb, eq, expression)));
-        stmtLFList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
-        Symbol stmtLF = new DecisionPointSymbol(stmtLFList);
-        statementList.add(new CompositeSymbol(Arrays.asList(tHis, dotIdContinue, stmtLF, semi)));
-        statementList.add(new CompositeSymbol(Arrays.asList(new DecisionPointSymbol(Arrays.asList(Boolean, intType)), id, eq, expression, semi)));
-        // ( e | [exp] )
-        List<Symbol> emptyOrBExpList = new ArrayList<>();
-        emptyOrBExpList.add(EBNFGrammar.EMPTY_STRING);
-        emptyOrBExpList.add(new CompositeSymbol(Arrays.asList(lsqb, expression, rsqb)));
-        Symbol emptyOrBExp = new DecisionPointSymbol(emptyOrBExpList);
-        // (e | [exp]) = exp;
-        List<Symbol> referenceEqExpList = new ArrayList<>();
-        referenceEqExpList.add(emptyOrBExp);
-        referenceEqExpList.addAll(Arrays.asList(eq, expression, semi));
-        Symbol referenceEqExpSymbol = new CompositeSymbol(referenceEqExpList);
-        // (e | [exp]) = exp; | ( Args? );
-        List<Symbol> idLfFactoredList = new ArrayList<>();
-        idLfFactoredList.add(referenceEqExpSymbol);
-        idLfFactoredList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb, semi)));
-        Symbol idLfFactoredDecisionSymbol = new DecisionPointSymbol(idLfFactoredList);
-        Symbol idLfFactoredSymbol = new CompositeSymbol("RefStmt", Arrays.asList(dotIdContinue, idLfFactoredDecisionSymbol));
-        // ( e | []) id = exp;
-        List<Symbol> idRfFactoredList = new ArrayList<>();
-        idRfFactoredList.add(emptyOrSqb);
-        idRfFactoredList.addAll(Arrays.asList(id, eq, expression, semi));
-        Symbol idRfFactoredSymbol = new CompositeSymbol("TypeStmt", idRfFactoredList);
-        Symbol idFactoredDecision = new DecisionPointSymbol("RefOrType", Arrays.asList(idLfFactoredSymbol, idRfFactoredSymbol));
-        statementList.add(new CompositeSymbol(Arrays.asList(id, idFactoredDecision)));
-        statementList.add(new CompositeSymbol(Arrays.asList(reTurn, new DecisionPointSymbol(Arrays.asList(expression, EBNFGrammar.EMPTY_STRING)), semi)));
+        statementList.add(new CompositeSymbol("StatementsBlock", stmtWildCard));
+        statementList.add(new CompositeSymbol("TypeInitAssign", Arrays.asList(type, id, eq, expression, semi)));
+
+        // left factorization Reference ( = Exp | [Exp] = Exp | (ArgList?) );
+        List<Symbol> stmtFactorized = new ArrayList<>();
+        stmtFactorized.add(new CompositeSymbol(Arrays.asList(eq, expression)));
+        stmtFactorized.add(new CompositeSymbol(Arrays.asList(GRAMMAR.placeholderName("ExpBracketed"), eq, expression)));
+        stmtFactorized.add(GRAMMAR.placeholderName("CallArguments"));
+        Symbol factorizedStatement = new CompositeSymbol("RefFactoredStmt", Arrays.asList(reference, new DecisionPointSymbol("RefFactoredStmtChoice", stmtFactorized), semi));
+        statementList.add(factorizedStatement);
+
+        statementList.add(new CompositeSymbol("returnStmt", Arrays.asList(reTurn, new DecisionPointSymbol("expOrEmpty", Arrays.asList(expression, EBNFGrammar.EMPTY_STRING)), semi)));
         List<Symbol> ifStmtList = new ArrayList<>();
         ifStmtList.add(If);
         ifStmtList.add(lpb);
@@ -297,8 +388,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         ifStmtList.add(rpb);
         ifStmtList.add(GRAMMAR.placeholderName("Statement"));
         ifStmtList.add(new DecisionPointSymbol("TrailingElse", Arrays.asList(new CompositeSymbol("ElseStmt", Arrays.asList(Else, GRAMMAR.placeholderName("Statement"))), EBNFGrammar.EMPTY_STRING)));
-        statementList.add(new CompositeSymbol(ifStmtList));
-        statementList.add(new CompositeSymbol(Arrays.asList(While, lpb, expression, rpb, GRAMMAR.placeholderName("Statement"))));
+        statementList.add(new CompositeSymbol("IfStmt", ifStmtList));
+        statementList.add(new CompositeSymbol("WhileStmt", Arrays.asList(While, lpb, expression, rpb, GRAMMAR.placeholderName("Statement"))));
 
         Symbol statement = new DecisionPointSymbol("Statement", statementList);
         GRAMMAR.registerNonTerminalSymbol(statement);
@@ -376,92 +467,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
 
         Symbol program = new CompositeSymbol("Program", Arrays.asList(new WildCardSymbol(classDeclaration), terminalSymbol));
         GRAMMAR.registerStartSymbol(program);
-    }
 
-    public MiniJavaEBNFGrammarParser(TokenScanner scanner) {
-        super(scanner, GRAMMAR, new HashMap<>());
-    }
-
-    @Override
-    protected AST handleDecisionPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
-        Symbol decidingPoint = symbols.get(0);
-        ASTConstructor ctor = getASTConstructor(decidingPoint);
-        if(decidingPoint.getName().equals("TrailingElse")) {
-            if(CompilerGlobal.DEBUG_3) {
-                System.out.println("Non LL1 deciding trailing else");
-            }
-            if(getToken().getTokenType() == TokenType.ELSE) {
-                for(Symbol s : decidingPoint.getExpression()) {
-                    if(s.getName().equals("ElseStmt")) {
-                        if(CompilerGlobal.DEBUG_3) {
-                            System.out.println("Encountered Else, greedily proceeding");
-                        }
-                        return ctor.buildTree(s, parse(Collections.singletonList(s)));
-                    }
-                }
-                throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
-            }
-        } else if(decidingPoint.getName().equals("RefOrType")) {
-            if(getToken().getTokenType() != TokenType.LEFT_SQ_BRACKET) {
-                if(CompilerGlobal.DEBUG_3) {
-                    System.out.println("No ambiguity, proceeding normally");
-                }
-                return super.handleDecisionPoint(symbols);
-            } else {
-                Token peeked = peek();
-                if(peeked.getTokenType() == TokenType.RIGHT_SQ_BRACKET) {
-                    for(Symbol s : decidingPoint.getExpression()) {
-                        if(s.getName().equals("TypeStmt")) {
-                            if(CompilerGlobal.DEBUG_3) {
-                                System.out.println("Peeked ], handling as []");
-                            }
-                            return ctor.buildTree(s, parse(Collections.singletonList(s)));
-                        }
-                    }
-                    throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
-                } else {
-                    for(Symbol s : decidingPoint.getExpression()) {
-                        if(s.getName().equals("RefStmt")) {
-                            if(CompilerGlobal.DEBUG_3) {
-                                System.out.println("Did not peek ], handling as ref");
-                            }
-                            return ctor.buildTree(s, parse(Collections.singletonList(s)));
-                        }
-                    }
-                    throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
-                }
-            }
-        } else {
-            return super.handleDecisionPoint(symbols);
-        }
-        return null;
-    }
-
-    @Override
-    protected AST handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
-        Symbol wildCard = symbols.get(0);
-        if (Arrays.asList("AExpRep", "MExpRep", "ExpRep", "EqExpRep", "CExpRep", "RExpRep").contains(wildCard.getName())) {
-            ASTConstructor ctor = getASTConstructor(wildCard);
-            List<AST> childASTs = handleRepeatedExpressions(wildCard.getExpression().get(0));
-            return ctor.buildTree(wildCard, childASTs);
-        } else {
-            return super.handleRepeatingPoint(symbols);
-        }
-    }
-
-    private List<AST> handleRepeatedExpressions(Symbol repeated) throws ParsingException, GrammarException, IOException {
-        ParsableSymbol operator = (ParsableSymbol) repeated.getExpression().get(0);
-        ASTConstructor ctor = getASTConstructor(repeated);
-        List<AST> result = new ArrayList<>();
-        while (operator.isInstance(getToken())) {
-            if (CompilerGlobal.DEBUG_3) {
-                System.out.println("Found following operator, proceeding");
-            }
-            List<AST> childs = parse(Collections.singletonList(repeated));
-            AST childAST = ctor.buildTree(repeated, childs);
-            result.add(childAST);
-        }
-        return result;
+        return GRAMMAR;
     }
 
 }

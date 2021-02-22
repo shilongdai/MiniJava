@@ -108,8 +108,8 @@ public class TestEBNFGrammer {
         // Reference ::= id | this | Reference . id
         List<Symbol> referenceList = new ArrayList<>();
         // id | this | Reference . id -> (id | this) (. id)*
-        referenceList.add(new DecisionPointSymbol(Arrays.asList(tHis, id)));
-        Symbol dotIdContinue = new WildCardSymbol(new CompositeSymbol(Arrays.asList(dot, id)));
+        referenceList.add(new DecisionPointSymbol("thisOrId", Arrays.asList(tHis, id)));
+        Symbol dotIdContinue = new WildCardSymbol("dotIdChain", new CompositeSymbol("dotId", Arrays.asList(dot, id)));
         referenceList.add(dotIdContinue);
 
         Symbol reference = new CompositeSymbol("Reference", referenceList);
@@ -121,10 +121,10 @@ public class TestEBNFGrammer {
         List<Symbol> typeArrayDec = new ArrayList<>();
         typeArrayDec.add(lsqb);
         typeArrayDec.add(rsqb);
-        Symbol emptyOrSqb = new DecisionPointSymbol(Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol(typeArrayDec)));
+        Symbol emptyOrSqb = new DecisionPointSymbol("emptyOrSqBrackets", Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol(typeArrayDec)));
         typeList.add(Boolean);
-        Symbol intType = new CompositeSymbol(Arrays.asList(Int, emptyOrSqb));
-        Symbol idType = new CompositeSymbol(Arrays.asList(id, emptyOrSqb));
+        Symbol intType = new CompositeSymbol("IntRelatedType", Arrays.asList(Int, emptyOrSqb));
+        Symbol idType = new CompositeSymbol("UserRelatedType", Arrays.asList(id, emptyOrSqb));
         typeList.add(intType);
         typeList.add(idType);
 
@@ -152,11 +152,11 @@ public class TestEBNFGrammer {
         List<Symbol> bExpList = new ArrayList<>();
         // apply left factorization Reference ( [ Expression ] | ( ArgumentList? ) | ε )
         List<Symbol> factorizedExpressionList = new ArrayList<>();
-        Symbol argListOrEmpty = new DecisionPointSymbol(Arrays.asList(grammer.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
-        factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lsqb, grammer.placeholderName("Expression"), rsqb)));
-        factorizedExpressionList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
+        Symbol argListOrEmpty = new DecisionPointSymbol("argListEmpty", Arrays.asList(grammer.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
+        factorizedExpressionList.add(new CompositeSymbol("ExpBracketed", Arrays.asList(lsqb, grammer.placeholderName("Expression"), rsqb)));
+        factorizedExpressionList.add(new CompositeSymbol("CallArguments", Arrays.asList(lpb, argListOrEmpty, rpb)));
         factorizedExpressionList.add(EBNFGrammar.EMPTY_STRING);
-        bExpList.add(new CompositeSymbol(Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
+        bExpList.add(new CompositeSymbol("RefExtendedExp", Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
         bExpList.add(num);
         bExpList.add(True);
         bExpList.add(False);
@@ -177,7 +177,7 @@ public class TestEBNFGrammer {
             (Exp) | BExp
          */
         List<Symbol> pExpList = new ArrayList<>();
-        pExpList.add(new CompositeSymbol(Arrays.asList(lpb, grammer.placeholderName("Expression"), rpb)));
+        pExpList.add(new CompositeSymbol("PExpEnclosed", Arrays.asList(lpb, grammer.placeholderName("Expression"), rpb)));
         pExpList.add(bExp);
         Symbol pExp = new DecisionPointSymbol("PExp", pExpList);
 
@@ -187,7 +187,7 @@ public class TestEBNFGrammer {
          */
         List<Symbol> uExpList = new ArrayList<>();
         uExpList.add(pExp);
-        uExpList.add(new CompositeSymbol(Arrays.asList(unop, grammer.placeholderName("Expression"))));
+        uExpList.add(new CompositeSymbol("UExpEnclosed", Arrays.asList(unop, grammer.placeholderName("Expression"))));
         Symbol uExp = new DecisionPointSymbol("UExp", uExpList);
 
         /*
@@ -196,7 +196,7 @@ public class TestEBNFGrammer {
          */
         List<Symbol> mExpList = new ArrayList<>();
         mExpList.add(uExp);
-        mExpList.add(new WildCardSymbol("MExpRep", new CompositeSymbol(Arrays.asList(multop, uExp))));
+        mExpList.add(new WildCardSymbol("MExpRep", new CompositeSymbol("MExpEnclosed", Arrays.asList(multop, uExp))));
         Symbol mExp = new CompositeSymbol("MExp", mExpList);
 
         /*
@@ -248,7 +248,7 @@ public class TestEBNFGrammer {
         // ArgumentList ::= Expression ( , Expression )*
         List<Symbol> argList = new ArrayList<>();
         argList.add(expression);
-        argList.add(new WildCardSymbol(new CompositeSymbol(Arrays.asList(comma, expression))));
+        argList.add(new WildCardSymbol("FollowingExpArgs", new CompositeSymbol("CommaExpArg", Arrays.asList(comma, expression))));
 
         Symbol argumentList = new CompositeSymbol("ArgumentList", argList);
         grammer.registerNonTerminalSymbol(argumentList);
@@ -267,42 +267,20 @@ public class TestEBNFGrammer {
         List<Symbol> statementList = new ArrayList<>();
         List<Symbol> stmtWildCard = new ArrayList<>();
         stmtWildCard.add(llb);
-        stmtWildCard.add(new WildCardSymbol(grammer.placeholderName("Statement")));
+        stmtWildCard.add(new WildCardSymbol("StatementList", grammer.placeholderName("Statement")));
         stmtWildCard.add(rlb);
-        statementList.add(new CompositeSymbol(stmtWildCard));
-        // apply left factorization Reference ( = Expression | [ Expression ] = Expression | ( ArgumentList? ) ) ;
-        // then eliminates reference and type to ensure LL1
-        List<Symbol> stmtLFList = new ArrayList<>();
-        stmtLFList.add(new CompositeSymbol(Arrays.asList(eq, expression)));
-        stmtLFList.add(new CompositeSymbol(Arrays.asList(lsqb, expression, rsqb, eq, expression)));
-        stmtLFList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb)));
-        Symbol stmtLF = new DecisionPointSymbol(stmtLFList);
-        statementList.add(new CompositeSymbol(Arrays.asList(tHis, dotIdContinue, stmtLF, semi)));
-        statementList.add(new CompositeSymbol(Arrays.asList(new DecisionPointSymbol(Arrays.asList(Boolean, intType)), id, eq, expression, semi)));
-        // ( e | [exp] )
-        List<Symbol> emptyOrBExpList = new ArrayList<>();
-        emptyOrBExpList.add(EBNFGrammar.EMPTY_STRING);
-        emptyOrBExpList.add(new CompositeSymbol(Arrays.asList(lsqb, expression, rsqb)));
-        Symbol emptyOrBExp = new DecisionPointSymbol(emptyOrBExpList);
-        // (e | [exp]) = exp;
-        List<Symbol> referenceEqExpList = new ArrayList<>();
-        referenceEqExpList.add(emptyOrBExp);
-        referenceEqExpList.addAll(Arrays.asList(eq, expression, semi));
-        Symbol referenceEqExpSymbol = new CompositeSymbol(referenceEqExpList);
-        // (e | [exp]) = exp; | ( Args? );
-        List<Symbol> idLfFactoredList = new ArrayList<>();
-        idLfFactoredList.add(referenceEqExpSymbol);
-        idLfFactoredList.add(new CompositeSymbol(Arrays.asList(lpb, argListOrEmpty, rpb, semi)));
-        Symbol idLfFactoredDecisionSymbol = new DecisionPointSymbol(idLfFactoredList);
-        Symbol idLfFactoredSymbol = new CompositeSymbol("RefStmt", Arrays.asList(dotIdContinue, idLfFactoredDecisionSymbol));
-        // ( e | []) id = exp;
-        List<Symbol> idRfFactoredList = new ArrayList<>();
-        idRfFactoredList.add(emptyOrSqb);
-        idRfFactoredList.addAll(Arrays.asList(id, eq, expression, semi));
-        Symbol idRfFactoredSymbol = new CompositeSymbol("TypeStmt", idRfFactoredList);
-        Symbol idFactoredDecision = new DecisionPointSymbol("RefOrType", Arrays.asList(idLfFactoredSymbol, idRfFactoredSymbol));
-        statementList.add(new CompositeSymbol(Arrays.asList(id, idFactoredDecision)));
-        statementList.add(new CompositeSymbol(Arrays.asList(reTurn, new DecisionPointSymbol(Arrays.asList(expression, EBNFGrammar.EMPTY_STRING)), semi)));
+        statementList.add(new CompositeSymbol("StatementsBlock", stmtWildCard));
+        statementList.add(new CompositeSymbol("TypeInitAssign", Arrays.asList(type, id, eq, expression, semi)));
+
+        // left factorization Reference ( = Exp | [Exp] = Exp | (ArgList?) );
+        List<Symbol> stmtFactorized = new ArrayList<>();
+        stmtFactorized.add(new CompositeSymbol(Arrays.asList(eq, expression)));
+        stmtFactorized.add(new CompositeSymbol(Arrays.asList(grammer.placeholderName("ExpBracketed"), eq, expression)));
+        stmtFactorized.add(grammer.placeholderName("CallArguments"));
+        Symbol factorizedStatement = new CompositeSymbol("RefFactoredStmt", Arrays.asList(reference, new DecisionPointSymbol("RefFactoredStmtChoice", stmtFactorized), semi));
+        statementList.add(factorizedStatement);
+
+        statementList.add(new CompositeSymbol("returnStmt", Arrays.asList(reTurn, new DecisionPointSymbol("expOrEmpty", Arrays.asList(expression, EBNFGrammar.EMPTY_STRING)), semi)));
         List<Symbol> ifStmtList = new ArrayList<>();
         ifStmtList.add(If);
         ifStmtList.add(lpb);
@@ -310,8 +288,8 @@ public class TestEBNFGrammer {
         ifStmtList.add(rpb);
         ifStmtList.add(grammer.placeholderName("Statement"));
         ifStmtList.add(new DecisionPointSymbol("TrailingElse", Arrays.asList(new CompositeSymbol("ElseStmt", Arrays.asList(Else, grammer.placeholderName("Statement"))), EBNFGrammar.EMPTY_STRING)));
-        statementList.add(new CompositeSymbol(ifStmtList));
-        statementList.add(new CompositeSymbol(Arrays.asList(While, lpb, expression, rpb, grammer.placeholderName("Statement"))));
+        statementList.add(new CompositeSymbol("IfStmt", ifStmtList));
+        statementList.add(new CompositeSymbol("WhileStmt", Arrays.asList(While, lpb, expression, rpb, grammer.placeholderName("Statement"))));
 
         Symbol statement = new DecisionPointSymbol("Statement", statementList);
         grammer.registerNonTerminalSymbol(statement);
@@ -478,7 +456,11 @@ public class TestEBNFGrammer {
         System.out.println("-----Predict Sets Not LL1------");
         for (PredictionSet set : predictSets) {
             if(!set.isLL1()) {
-                System.out.println(String.format("Rule: %s, Specific: %s, Sets: %s, LL1: %b", set.getSrcRule().getName(), set.getSrcRule().getExpression().get(set.getPredictPoint()), set.getPredictSets(), set.isLL1()));
+                if(set.getPredictPoint() != -1) {
+                    System.out.println(String.format("Rule: %s, Specific: %s, Sets: %s, LL1: %b", set.getSrcRule().getName(), set.getSrcRule().getExpression().get(set.getPredictPoint()), set.getPredictSets(), set.isLL1()));
+                } else {
+                    System.out.println(String.format("Rule: %s, Sets: %s, LL1: %b", set.getSrcRule().getName(), set.getPredictSets(), set.isLL1()));
+                }
             }
         }
     }

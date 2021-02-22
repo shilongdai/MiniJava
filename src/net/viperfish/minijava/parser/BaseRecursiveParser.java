@@ -18,11 +18,11 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
 
     private TokenScanner scanner;
     private Token currentToken;
-    private Token peeked;
+    private List<Token> peeked;
 
     public BaseRecursiveParser(TokenScanner scanner) {
         this.scanner = scanner;
-        this.peeked = null;
+        this.peeked = new ArrayList<>();
     }
 
     @Override
@@ -44,7 +44,7 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
             if (CompilerGlobal.DEBUG_2) {
                 System.out.println("Accepting: " + next.getName());
             }
-            Terminal t = accept((ParsableSymbol) next);
+            AST t = accept((ParsableSymbol) next);
             List<AST> other = parse(symbols.subList(1, symbols.size()));
             if(t != null) {
                 result.add(t);
@@ -104,21 +104,26 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
     }
 
     protected Token peek() throws IOException, ParsingException {
-        if (peeked == null) {
-            peeked = scanner.nextToken();
-        }
-        return peeked;
+        return peek(1).get(0);
     }
 
-    protected Terminal accept(ParsableSymbol symbol) throws GrammarException, IOException, ParsingException {
+    protected List<Token> peek(int amount) throws IOException, ParsingException {
+        if(peeked.size() < amount) {
+            while(peeked.size() != amount) {
+                peeked.add(scanner.nextToken());
+            }
+        }
+        return new ArrayList<>(peeked.subList(0, amount));
+    }
+
+    protected AST accept(ParsableSymbol symbol) throws GrammarException, IOException, ParsingException {
         if (CompilerGlobal.DEBUG_2) {
             System.out.println(String.format("Comparing: %s vs %s", symbol.getName(), currentToken.getSpelling()));
         }
         if (symbol.isInstance(currentToken)) {
             Token toConvert = currentToken;
-            if (peeked != null) {
-                currentToken = peeked;
-                peeked = null;
+            if (!peeked.isEmpty()) {
+                currentToken = peeked.remove(0);
             } else {
                 currentToken = scanner.nextToken();
             }
@@ -131,6 +136,8 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
                 return new IntLiteral(toConvert);
             } else if(toConvert.getTokenType().equals(TokenType.OPERATOR)) {
                 return new Operator(toConvert);
+            } else if(toConvert.getTokenType().equals(TokenType.THIS)) {
+                return new ThisRef(toConvert.getPosition());
             } else {
                 return null;
             }

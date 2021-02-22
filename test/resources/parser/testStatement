@@ -1,6 +1,8 @@
 class TestStatement {
 
     private static void main(int[] argv, int argc) {
+        int[] testRefAssign = argv;
+        testRefAssign[1] = 2;
         while(argc != 5)
             argc = argc + 1;
         if (1 == 1) {

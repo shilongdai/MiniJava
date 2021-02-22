@@ -3,7 +3,6 @@ package net.viperfish.minijava.parser;
 import net.viperfish.minijava.CompilerGlobal;
 import net.viperfish.minijava.ast.AST;
 import net.viperfish.minijava.ast.DefaultAST;
-import net.viperfish.minijava.ast.Terminal;
 import net.viperfish.minijava.ebnf.EBNFGrammar;
 import net.viperfish.minijava.ebnf.ParsableSymbol;
 import net.viperfish.minijava.ebnf.Symbol;
@@ -138,7 +137,7 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
     }
 
     @Override
-    protected Terminal accept(ParsableSymbol symbol) throws GrammarException, IOException, ParsingException {
+    protected AST accept(ParsableSymbol symbol) throws GrammarException, IOException, ParsingException {
         if(symbol == EBNFGrammar.EMPTY_STRING) {
             return null;
         }
@@ -149,6 +148,12 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
 
         @Override
         public AST buildTree(Symbol current, List<AST> parsed) {
+            if(parsed.isEmpty()) {
+                return null;
+            }
+            if(current instanceof ParsableSymbol && parsed.size() == 1) {
+                return parsed.get(0);
+            }
             return new DefaultAST(null, current, parsed);
         }
     }
