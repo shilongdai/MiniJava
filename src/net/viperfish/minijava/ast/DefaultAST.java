@@ -28,4 +28,9 @@ public class DefaultAST extends AST {
     public <A, R> R visit(Visitor<A, R> v, A o) {
         throw new UnsupportedOperationException("Default AST does not support proper visiter");
     }
+
+    @Override
+    public String toString() {
+        return String.format("DefaultAST(%s)%s", symbol.getName(), childASTs);
+    }
 }

@@ -128,16 +128,22 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
                 currentToken = scanner.nextToken();
             }
 
-            if(toConvert.getTokenType().equals(TokenType.TRUE) || toConvert.getTokenType().equals(TokenType.FALSE)) {
+            if (toConvert.getTokenType().equals(TokenType.TRUE) || toConvert.getTokenType().equals(TokenType.FALSE)) {
                 return new BooleanLiteral(toConvert);
-            } else if(toConvert.getTokenType().equals(TokenType.ID)) {
+            } else if (toConvert.getTokenType().equals(TokenType.ID)) {
                 return new Identifier(toConvert);
-            } else if(toConvert.getTokenType().equals(TokenType.NUM)) {
+            } else if (toConvert.getTokenType().equals(TokenType.NUM)) {
                 return new IntLiteral(toConvert);
-            } else if(toConvert.getTokenType().equals(TokenType.OPERATOR)) {
+            } else if (toConvert.getTokenType().equals(TokenType.OPERATOR)) {
                 return new Operator(toConvert);
-            } else if(toConvert.getTokenType().equals(TokenType.THIS)) {
+            } else if (toConvert.getTokenType().equals(TokenType.THIS)) {
                 return new ThisRef(toConvert.getPosition());
+            } else if (toConvert.getTokenType().equals(TokenType.INT)) {
+                return new BaseType(TypeKind.INT, toConvert.getPosition());
+            } else if(toConvert.getTokenType().equals(TokenType.BOOLEAN)) {
+                return new BaseType(TypeKind.BOOLEAN, toConvert.getPosition());
+            } else if(toConvert.getTokenType().equals(TokenType.VOID)) {
+                return new BaseType(TypeKind.VOID, toConvert.getPosition());
             } else {
                 return null;
             }

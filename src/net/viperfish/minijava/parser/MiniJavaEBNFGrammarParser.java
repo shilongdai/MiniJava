@@ -25,6 +25,14 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS.put("ExpBracketed", new ExpBracketedPassOverConstructor());
         AST_CONSTRUCTORS.put("PExpEnclosed", new PExpEnclosedPassOverConstructor());
         AST_CONSTRUCTORS.put("PExp", new PExpPassOverConstructor());
+        AST_CONSTRUCTORS.put("UExp", new UExpPassOverConstructor());
+        AST_CONSTRUCTORS.put("NewRHS", new NewRHSPassOverConstructor());
+        AST_CONSTRUCTORS.put("thisOrId", new ThisOrIdPassOverASTConstructor());
+        AST_CONSTRUCTORS.put("dotId", new DotIdPassOverASTConstructor());
+        AST_CONSTRUCTORS.put("ChooseRefExpType", new ChooseRefExpTypePassOverConstructor());
+        AST_CONSTRUCTORS.put("NewIdDecide", new NewIdDecidePassOverConstructor());
+        AST_CONSTRUCTORS.put("argListEmpty", new ArgListEmptyPassOverConstructor());
+        AST_CONSTRUCTORS.put("ArgListEnclosed", new ArgListEnclosedPassOverConstructor());
 
         // Expressions - Operators
         AST_CONSTRUCTORS.put("MExp", new OperatorExpressionASTConstructor());
@@ -35,6 +43,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS.put("Expression", new OperatorExpressionASTConstructor());
 
         // Expressions - Misc
+        AST_CONSTRUCTORS.put("NewExpression", new NewExpressionASTConstructor());
         AST_CONSTRUCTORS.put("RefExtendedExp", new RefExtendedExpASTConstructor());
         AST_CONSTRUCTORS.put("Reference", new StandardReferenceRefConstructor());
         AST_CONSTRUCTORS.put("UExpEnclosed", new UExpEnclosedASTConstructor());
@@ -221,7 +230,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         List<Symbol> typeArrayDec = new ArrayList<>();
         typeArrayDec.add(lsqb);
         typeArrayDec.add(rsqb);
-        Symbol emptyOrSqb = new DecisionPointSymbol("emptyOrSqBrackets", Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol(typeArrayDec)));
+        Symbol emptyOrSqb = new DecisionPointSymbol("emptyOrSqBrackets", Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol("sqBrackets", typeArrayDec)));
         typeList.add(Boolean);
         Symbol intType = new CompositeSymbol("IntRelatedType", Arrays.asList(Int, emptyOrSqb));
         Symbol idType = new CompositeSymbol("UserRelatedType", Arrays.asList(id, emptyOrSqb));
@@ -252,11 +261,11 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         List<Symbol> bExpList = new ArrayList<>();
         // apply left factorization Reference ( [ Expression ] | ( ArgumentList? ) | ε )
         List<Symbol> factorizedExpressionList = new ArrayList<>();
-        Symbol argListOrEmpty = new DecisionPointSymbol(Arrays.asList(GRAMMAR.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
+        Symbol argListOrEmpty = new DecisionPointSymbol("argListEmpty", Arrays.asList(GRAMMAR.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
         factorizedExpressionList.add(new CompositeSymbol("ExpBracketed", Arrays.asList(lsqb, GRAMMAR.placeholderName("Expression"), rsqb)));
         factorizedExpressionList.add(new CompositeSymbol("CallArguments", Arrays.asList(lpb, argListOrEmpty, rpb)));
         factorizedExpressionList.add(EBNFGrammar.EMPTY_STRING);
-        bExpList.add(new CompositeSymbol(Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
+        bExpList.add(new CompositeSymbol("RefExtendedExp", Arrays.asList(reference, new DecisionPointSymbol("ChooseRefExpType", factorizedExpressionList))));
         bExpList.add(num);
         bExpList.add(True);
         bExpList.add(False);
@@ -264,11 +273,11 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         List<Symbol> rhsNewList = new ArrayList<>();
         List<Symbol> rhsFactoredList = new ArrayList<>();
         rhsFactoredList.add(new CompositeSymbol(Arrays.asList(lpb, rpb)));
-        rhsFactoredList.add(new CompositeSymbol(Arrays.asList(lsqb, GRAMMAR.placeholderName("Expression"), rsqb)));
-        rhsNewList.add(new CompositeSymbol(Arrays.asList(id, new DecisionPointSymbol(rhsFactoredList))));
-        rhsNewList.add(new CompositeSymbol(Arrays.asList(Int, lsqb, GRAMMAR.placeholderName("Expression"), rsqb)));
-        Symbol rhsNew = new DecisionPointSymbol(rhsNewList);
-        Symbol newDec = new CompositeSymbol(Arrays.asList(New, rhsNew));
+        rhsFactoredList.add(GRAMMAR.placeholderName("ExpBracketed"));
+        rhsNewList.add(new CompositeSymbol("NewIdRelated", Arrays.asList(id, new DecisionPointSymbol("NewIdDecide", rhsFactoredList))));
+        rhsNewList.add(new CompositeSymbol("NewIntArray", Arrays.asList(Int, GRAMMAR.placeholderName("ExpBracketed"))));
+        Symbol rhsNew = new DecisionPointSymbol("NewRHS", rhsNewList);
+        Symbol newDec = new CompositeSymbol("NewExpression", Arrays.asList(New, rhsNew));
         bExpList.add(newDec);
         Symbol bExp = new DecisionPointSymbol("BExp", bExpList);
 
@@ -277,7 +286,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
             (Exp) | BExp
          */
         List<Symbol> pExpList = new ArrayList<>();
-        pExpList.add(new CompositeSymbol(Arrays.asList(lpb, GRAMMAR.placeholderName("Expression"), rpb)));
+        pExpList.add(new CompositeSymbol("PExpEnclosed", Arrays.asList(lpb, GRAMMAR.placeholderName("Expression"), rpb)));
         pExpList.add(bExp);
         Symbol pExp = new DecisionPointSymbol("PExp", pExpList);
 
@@ -287,7 +296,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> uExpList = new ArrayList<>();
         uExpList.add(pExp);
-        uExpList.add(new CompositeSymbol(Arrays.asList(unop, GRAMMAR.placeholderName("Expression"))));
+        uExpList.add(new CompositeSymbol("UExpEnclosed", Arrays.asList(unop, GRAMMAR.placeholderName("Expression"))));
         Symbol uExp = new DecisionPointSymbol("UExp", uExpList);
 
         /*
@@ -296,7 +305,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> mExpList = new ArrayList<>();
         mExpList.add(uExp);
-        mExpList.add(new WildCardSymbol("MExpRep", new CompositeSymbol(Arrays.asList(multop, uExp))));
+        mExpList.add(new WildCardSymbol("MExpRep", new CompositeSymbol("MExpEnclosed", Arrays.asList(multop, uExp))));
         Symbol mExp = new CompositeSymbol("MExp", mExpList);
 
         /*
@@ -305,7 +314,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> aExpList = new ArrayList<>();
         aExpList.add(mExp);
-        aExpList.add(new WildCardSymbol("AExpRep", new CompositeSymbol(Arrays.asList(addop, mExp))));
+        aExpList.add(new WildCardSymbol("AExpRep", new CompositeSymbol("AExpEnclosed", Arrays.asList(addop, mExp))));
         Symbol aExp = new CompositeSymbol("AExp", aExpList);
 
         /*
@@ -314,7 +323,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> rExpList = new ArrayList<>();
         rExpList.add(aExp);
-        rExpList.add(new WildCardSymbol("RExpRep", new CompositeSymbol(Arrays.asList(relop, aExp))));
+        rExpList.add(new WildCardSymbol("RExpRep", new CompositeSymbol("RExpEnclosed", Arrays.asList(relop, aExp))));
         Symbol rExp = new CompositeSymbol("RExp", rExpList);
 
         /*
@@ -323,7 +332,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> eqExpList = new ArrayList<>();
         eqExpList.add(rExp);
-        eqExpList.add(new WildCardSymbol("EqExpRep", new CompositeSymbol(Arrays.asList(eqop, rExp))));
+        eqExpList.add(new WildCardSymbol("EqExpRep", new CompositeSymbol("EqExpEnclosed", Arrays.asList(eqop, rExp))));
         Symbol eqExp = new CompositeSymbol("EqExp", eqExpList);
 
         /*
@@ -332,7 +341,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> cExpList = new ArrayList<>();
         cExpList.add(eqExp);
-        cExpList.add(new WildCardSymbol("CExpRep", new CompositeSymbol(Arrays.asList(cjop, eqExp))));
+        cExpList.add(new WildCardSymbol("CExpRep", new CompositeSymbol("CExpEnclosed", Arrays.asList(cjop, eqExp))));
         Symbol cExp = new CompositeSymbol("CExp", cExpList);
 
         /*
@@ -341,14 +350,14 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> expressionList = new ArrayList<>();
         expressionList.add(cExp);
-        expressionList.add(new WildCardSymbol("ExpRep", new CompositeSymbol(Arrays.asList(djop, cExp))));
+        expressionList.add(new WildCardSymbol("ExpRep", new CompositeSymbol("ExpEnclosed", Arrays.asList(djop, cExp))));
         Symbol expression = new CompositeSymbol("Expression", expressionList);
         GRAMMAR.registerNonTerminalSymbol(expression);
 
         // ArgumentList ::= Expression ( , Expression )*
         List<Symbol> argList = new ArrayList<>();
         argList.add(expression);
-        argList.add(new WildCardSymbol(new CompositeSymbol(Arrays.asList(comma, expression))));
+        argList.add(new WildCardSymbol(new CompositeSymbol("ArgListEnclosed", Arrays.asList(comma, expression))));
 
         Symbol argumentList = new CompositeSymbol("ArgumentList", argList);
         GRAMMAR.registerNonTerminalSymbol(argumentList);

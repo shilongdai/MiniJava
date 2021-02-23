@@ -64,8 +64,8 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
                         System.out.println(String.format("Choosing %s because of %s", child, p.getName()));
                     }
                     List<AST> childASTs = parse(Collections.singletonList(child));
-                    ASTConstructor childCtor = getASTConstructor(child);
-                    return childCtor.buildTree(child, childASTs);
+                    ASTConstructor decCtor = getASTConstructor(decision);
+                    return decCtor.buildTree(decision, childASTs);
                 }
             }
         }

@@ -34,7 +34,7 @@ public class RefExtendedExpASTConstructor implements ASTConstructor {
                         Expression arg = (Expression) a;
                         exprList.add(arg);
                     }
-                } else {
+                } else if(argList.getChildASTs().size() > 2) {
                     throw new IllegalArgumentException("Expected init expression followed by other arguments, got: " + argList.getChildASTs());
                 }
                 return new CallExpr(ref, exprList, ref.posn);

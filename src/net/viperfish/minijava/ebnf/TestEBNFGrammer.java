@@ -121,7 +121,7 @@ public class TestEBNFGrammer {
         List<Symbol> typeArrayDec = new ArrayList<>();
         typeArrayDec.add(lsqb);
         typeArrayDec.add(rsqb);
-        Symbol emptyOrSqb = new DecisionPointSymbol("emptyOrSqBrackets", Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol(typeArrayDec)));
+        Symbol emptyOrSqb = new DecisionPointSymbol("emptyOrSqBrackets", Arrays.asList(EBNFGrammar.EMPTY_STRING, new CompositeSymbol("sqBrackets", typeArrayDec)));
         typeList.add(Boolean);
         Symbol intType = new CompositeSymbol("IntRelatedType", Arrays.asList(Int, emptyOrSqb));
         Symbol idType = new CompositeSymbol("UserRelatedType", Arrays.asList(id, emptyOrSqb));
@@ -164,11 +164,11 @@ public class TestEBNFGrammer {
         List<Symbol> rhsNewList = new ArrayList<>();
         List<Symbol> rhsFactoredList = new ArrayList<>();
         rhsFactoredList.add(new CompositeSymbol(Arrays.asList(lpb, rpb)));
-        rhsFactoredList.add(new CompositeSymbol(Arrays.asList(lsqb, grammer.placeholderName("Expression"), rsqb)));
-        rhsNewList.add(new CompositeSymbol(Arrays.asList(id, new DecisionPointSymbol(rhsFactoredList))));
-        rhsNewList.add(new CompositeSymbol(Arrays.asList(Int, lsqb, grammer.placeholderName("Expression"), rsqb)));
-        Symbol rhsNew = new DecisionPointSymbol(rhsNewList);
-        Symbol newDec = new CompositeSymbol(Arrays.asList(New, rhsNew));
+        rhsFactoredList.add(grammer.placeholderName("ExpBracketed"));
+        rhsNewList.add(new CompositeSymbol("NewIdRelated", Arrays.asList(id, new DecisionPointSymbol(rhsFactoredList))));
+        rhsNewList.add(new CompositeSymbol("NewIntArray", Arrays.asList(Int, grammer.placeholderName("ExpBracketed"))));
+        Symbol rhsNew = new DecisionPointSymbol("NewRHS", rhsNewList);
+        Symbol newDec = new CompositeSymbol("NewExpression", Arrays.asList(New, rhsNew));
         bExpList.add(newDec);
         Symbol bExp = new DecisionPointSymbol("BExp", bExpList);
 
@@ -205,7 +205,7 @@ public class TestEBNFGrammer {
          */
         List<Symbol> aExpList = new ArrayList<>();
         aExpList.add(mExp);
-        aExpList.add(new WildCardSymbol("AExpRep", new CompositeSymbol(Arrays.asList(addop, mExp))));
+        aExpList.add(new WildCardSymbol("AExpRep", new CompositeSymbol("AExpEnclosed", Arrays.asList(addop, mExp))));
         Symbol aExp = new CompositeSymbol("AExp", aExpList);
 
         /*
