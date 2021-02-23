@@ -82,7 +82,9 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                 return super.handleDecisionPoint(symbols);
             } else {
                 List<Token> bracketCheck = peek(2);
-                if(bracketCheck.get(0).getTokenType() == TokenType.LEFT_SQ_BRACKET && bracketCheck.get(1).getTokenType() == TokenType.RIGHT_SQ_BRACKET) {
+                boolean typeCheck1 = bracketCheck.get(0).getTokenType() == TokenType.LEFT_SQ_BRACKET && bracketCheck.get(1).getTokenType() == TokenType.RIGHT_SQ_BRACKET;
+                boolean typeCheck2 = bracketCheck.get(0).getTokenType() == TokenType.ID;
+                if(typeCheck1 || typeCheck2) {
                     for(Symbol s : decidingPoint.getExpression()) {
                         if(s.getName().equals("TypeInitAssign")) {
                             if(CompilerGlobal.DEBUG_3) {
