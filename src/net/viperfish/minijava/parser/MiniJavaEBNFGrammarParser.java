@@ -33,6 +33,13 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS.put("NewIdDecide", new NewIdDecidePassOverConstructor());
         AST_CONSTRUCTORS.put("argListEmpty", new ArgListEmptyPassOverConstructor());
         AST_CONSTRUCTORS.put("ArgListEnclosed", new ArgListEnclosedPassOverConstructor());
+        AST_CONSTRUCTORS.put("emptyOrSqBrackets", new EmptyOrSqBracketsPassOverConstructor());
+        AST_CONSTRUCTORS.put("Type", new TypePassOverConstructor());
+
+        // Type
+        AST_CONSTRUCTORS.put("sqBrackets", new SQBracketASTConstructor());
+        AST_CONSTRUCTORS.put("IntRelatedType", new TypeRawArrASTConstructor());
+        AST_CONSTRUCTORS.put("UserRelatedType", new TypeRawArrASTConstructor());
 
         // Expressions - Operators
         AST_CONSTRUCTORS.put("MExp", new OperatorExpressionASTConstructor());
@@ -48,6 +55,9 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS.put("Reference", new StandardReferenceRefConstructor());
         AST_CONSTRUCTORS.put("UExpEnclosed", new UExpEnclosedASTConstructor());
         AST_CONSTRUCTORS.put("BExp", new BaseExpressionASTConstructor());
+
+        // Statement
+        AST_CONSTRUCTORS.put("TypeInitAssign", new TypeInitAssignASTConstructor());
 
     }
 
