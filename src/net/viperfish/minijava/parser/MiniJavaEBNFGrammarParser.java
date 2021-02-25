@@ -21,20 +21,29 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS = new HashMap<>();
 
         // Pass Overs
-        AST_CONSTRUCTORS.put("CallArguments", new CallArgumentsPassoverConstructor());
-        AST_CONSTRUCTORS.put("ExpBracketed", new ExpBracketedPassOverConstructor());
-        AST_CONSTRUCTORS.put("PExpEnclosed", new PExpEnclosedPassOverConstructor());
-        AST_CONSTRUCTORS.put("PExp", new PExpPassOverConstructor());
-        AST_CONSTRUCTORS.put("UExp", new UExpPassOverConstructor());
-        AST_CONSTRUCTORS.put("NewRHS", new NewRHSPassOverConstructor());
-        AST_CONSTRUCTORS.put("thisOrId", new ThisOrIdPassOverASTConstructor());
-        AST_CONSTRUCTORS.put("dotId", new DotIdPassOverASTConstructor());
-        AST_CONSTRUCTORS.put("ChooseRefExpType", new ChooseRefExpTypePassOverConstructor());
-        AST_CONSTRUCTORS.put("NewIdDecide", new NewIdDecidePassOverConstructor());
-        AST_CONSTRUCTORS.put("argListEmpty", new ArgListEmptyPassOverConstructor());
-        AST_CONSTRUCTORS.put("ArgListEnclosed", new ArgListEnclosedPassOverConstructor());
-        AST_CONSTRUCTORS.put("emptyOrSqBrackets", new EmptyOrSqBracketsPassOverConstructor());
-        AST_CONSTRUCTORS.put("Type", new TypePassOverConstructor());
+        AST_CONSTRUCTORS.put("ExpBracketed", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("PExpEnclosed", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("PExp", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("UExp", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("NewRHS", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("thisOrId", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("dotId", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("ChooseRefExpType", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("NewIdDecide", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("argListEmpty", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("ArgListEnclosed", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("emptyOrSqBrackets", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("Type", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("RefEqExpStmt", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("expOrEmpty", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("ElseStmt", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("TrailingElse", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("Statement", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("ParameterListEnclosed", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("PublicPrivate", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("VoidOrTypedDecl", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("FieldOrTypeMethodDecl", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("ParamOrEmpty", new PassOverASTConstructor());
 
         // Type
         AST_CONSTRUCTORS.put("sqBrackets", new SQBracketASTConstructor());
@@ -55,9 +64,26 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS.put("Reference", new StandardReferenceRefConstructor());
         AST_CONSTRUCTORS.put("UExpEnclosed", new UExpEnclosedASTConstructor());
         AST_CONSTRUCTORS.put("BExp", new BaseExpressionASTConstructor());
+        AST_CONSTRUCTORS.put("CallArguments", new CallArgumentsASTConstructor());
 
         // Statement
+        AST_CONSTRUCTORS.put("StatementsBlock", new BlockStatementASTConstructor());
         AST_CONSTRUCTORS.put("TypeInitAssign", new TypeInitAssignASTConstructor());
+        AST_CONSTRUCTORS.put("RefFactoredStmt", new RefFactoredStmtASTConstructor());
+        AST_CONSTRUCTORS.put("returnStmt", new ReturnStmtASTConstructor());
+        AST_CONSTRUCTORS.put("IfStmt", new IfStmtASTConstructor());
+        AST_CONSTRUCTORS.put("WhileStmt", new WhileStatementASTConstructor());
+        AST_CONSTRUCTORS.put("StatementList", new StatementListASTConstructor());
+
+        // Parameter
+        AST_CONSTRUCTORS.put("ParamDecl", new ParamDeclASTConstructor());
+
+        // Decls
+        AST_CONSTRUCTORS.put("Visibility", new VisibilityASTConstructor());
+        AST_CONSTRUCTORS.put("Access", new AccessASTConstructor());
+        AST_CONSTRUCTORS.put("ClassMemberDecl", new ClassMemberDeclASTConstructor());
+        AST_CONSTRUCTORS.put("ClassDeclaration", new ClassDeclarationASTConstructor());
+        AST_CONSTRUCTORS.put("Program", new ProgramASTConstructor());
 
     }
 
@@ -79,7 +105,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                         if(CompilerGlobal.DEBUG_3) {
                             System.out.println("Encountered Else, greedily proceeding");
                         }
-                        return ctor.buildTree(s, parse(Collections.singletonList(s)));
+                        return ctor.buildTree(decidingPoint, parse(Collections.singletonList(s)));
                     }
                 }
                 throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
@@ -100,7 +126,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                             if(CompilerGlobal.DEBUG_3) {
                                 System.out.println("Peeked [], handling as Type");
                             }
-                            return ctor.buildTree(s, parse(Collections.singletonList(s)));
+                            return ctor.buildTree(decidingPoint, parse(Collections.singletonList(s)));
                         }
                     }
                     throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
@@ -110,7 +136,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                             if(CompilerGlobal.DEBUG_3) {
                                 System.out.println("Did not peek [], handling as Reference");
                             }
-                            return ctor.buildTree(s, parse(Collections.singletonList(s)));
+                            return ctor.buildTree(decidingPoint, parse(Collections.singletonList(s)));
                         }
                     }
                     throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
@@ -143,8 +169,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                 System.out.println("Found following operator, proceeding");
             }
             List<AST> childs = parse(Collections.singletonList(repeated));
-            AST childAST = ctor.buildTree(repeated, childs);
-            result.add(childAST);
+            result.addAll(childs);
         }
         return result;
     }
@@ -395,8 +420,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
 
         // left factorization Reference ( = Exp | [Exp] = Exp | (ArgList?) );
         List<Symbol> stmtFactorized = new ArrayList<>();
-        stmtFactorized.add(new CompositeSymbol(Arrays.asList(eq, expression)));
-        stmtFactorized.add(new CompositeSymbol(Arrays.asList(GRAMMAR.placeholderName("ExpBracketed"), eq, expression)));
+        stmtFactorized.add(new CompositeSymbol("RefEqExpStmt", Arrays.asList(eq, expression)));
+        stmtFactorized.add(new CompositeSymbol("RefIdxEqExpStmt", Arrays.asList(GRAMMAR.placeholderName("ExpBracketed"), eq, expression)));
         stmtFactorized.add(GRAMMAR.placeholderName("CallArguments"));
         Symbol factorizedStatement = new CompositeSymbol("RefFactoredStmt", Arrays.asList(reference, new DecisionPointSymbol("RefFactoredStmtChoice", stmtFactorized), semi));
         statementList.add(factorizedStatement);
@@ -417,9 +442,9 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
 
         // ParameterList ::= Type id ( , Type id )*
         List<Symbol> paramList = new ArrayList<>();
-        paramList.add(type);
-        paramList.add(id);
-        paramList.add(new WildCardSymbol(new CompositeSymbol(Arrays.asList(comma, type, id))));
+        Symbol paramDecl = new CompositeSymbol("ParamDecl", Arrays.asList(type, id));
+        paramList.add(paramDecl);
+        paramList.add(new WildCardSymbol(new CompositeSymbol("ParameterListEnclosed", Arrays.asList(comma, paramDecl))));
 
         Symbol parameterList = new CompositeSymbol("ParameterList", paramList);
         GRAMMAR.registerNonTerminalSymbol(parameterList);
@@ -430,7 +455,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
 
         // Visibility ::= ( public | private )?
         List<Symbol> visibilityList = new ArrayList<>();
-        visibilityList.add(new DecisionPointSymbol(Arrays.asList(Public, Private)));
+        visibilityList.add(new DecisionPointSymbol("PublicPrivate", Arrays.asList(Public, Private)));
         visibilityList.add(EBNFGrammar.EMPTY_STRING);
 
         Symbol visibility = new DecisionPointSymbol("Visibility", visibilityList);
@@ -444,11 +469,9 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         methodDeclarationList.add(new DecisionPointSymbol(Arrays.asList(type, Void)));
         methodDeclarationList.add(id);
         methodDistinguished.add(lpb);
-        methodDistinguished.add(new DecisionPointSymbol(Arrays.asList(parameterList, EBNFGrammar.EMPTY_STRING)));
+        methodDistinguished.add(new DecisionPointSymbol("ParamOrEmpty", Arrays.asList(parameterList, EBNFGrammar.EMPTY_STRING)));
         methodDistinguished.add(rpb);
-        methodDistinguished.add(llb);
-        methodDistinguished.add(new WildCardSymbol(statement));
-        methodDistinguished.add(rlb);
+        methodDistinguished.add(GRAMMAR.placeholderName("StatementsBlock"));
         methodDeclarationList.addAll(methodDistinguished);
 
         Symbol methodDeclaration = new CompositeSymbol("MethodDeclaration", methodDeclarationList);
@@ -474,12 +497,12 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         List<Symbol> typedDeclaration = new ArrayList<>();
         typedDeclaration.add(type);
         typedDeclaration.add(id);
-        typedDeclaration.add(new DecisionPointSymbol(Arrays.asList(semi, new CompositeSymbol(methodDistinguished))));
+        typedDeclaration.add(new DecisionPointSymbol("FieldOrTypeMethodDecl", Arrays.asList(semi, new CompositeSymbol("MethodDeclExtension", methodDistinguished))));
         List<Symbol> voidDeclaration = new ArrayList<>();
         voidDeclaration.add(Void);
         voidDeclaration.add(id);
         voidDeclaration.addAll(methodDistinguished);
-        Symbol decomposedDecs = new CompositeSymbol(Arrays.asList(visibility, access, new DecisionPointSymbol(Arrays.asList(new CompositeSymbol(typedDeclaration), new CompositeSymbol(voidDeclaration)))));
+        Symbol decomposedDecs = new CompositeSymbol("ClassMemberDecl", Arrays.asList(visibility, access, new DecisionPointSymbol("VoidOrTypedDecl", Arrays.asList(new CompositeSymbol("TypedDecl", typedDeclaration), new CompositeSymbol("VoidDecl", voidDeclaration)))));
         classDecList.add(new WildCardSymbol(decomposedDecs));
         classDecList.add(rlb);
 

@@ -30,9 +30,8 @@ public class OperatorExpressionASTConstructor implements ASTConstructor {
         DefaultAST followingOperands = (DefaultAST) parsed.get(1);
         for(AST a : followingOperands.getChildASTs()) {
             DefaultAST enclosed = (DefaultAST) a;
-            DefaultAST operandExp = (DefaultAST) enclosed.getChildASTs().get(0);
-            Operator operator = (Operator) operandExp.getChildASTs().get(0);
-            Expression exp = (Expression) operandExp.getChildASTs().get(1);
+            Operator operator = (Operator) enclosed.getChildASTs().get(0);
+            Expression exp = (Expression) enclosed.getChildASTs().get(1);
             expressionParts.add(operator);
             expressionParts.add(exp);
         }

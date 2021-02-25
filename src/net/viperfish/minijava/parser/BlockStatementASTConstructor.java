@@ -14,11 +14,7 @@ public class BlockStatementASTConstructor implements ASTConstructor {
         }
 
         DefaultAST blockStmts = (DefaultAST) parsed.get(0);
-        StatementList list = new StatementList();
-        for(AST a : blockStmts.getChildASTs()) {
-            Statement s = (Statement) a;
-            list.add(s);
-        }
+        StatementList list = ParserUtils.parseStatementList(blockStmts);
         SourcePosition pos = null;
         if(list.size() > 0) {
             pos = list.get(0).posn;

@@ -22,22 +22,12 @@ public class RefExtendedExpASTConstructor implements ASTConstructor {
                 return new IxExpr(ref, (Expression) sec, sec.posn);
             } else if(sec instanceof DefaultAST) {
                 DefaultAST argList = (DefaultAST) sec;
-                if(!argList.getSymbol().getName().equals("ArgumentList")) {
-                    throw new IllegalArgumentException("Expected ArgumentList, got: " + argList.getSymbol().getName());
+                if(argList.getChildASTs().isEmpty()) {
+                    return new CallExpr(ref, new ExprList(), ref.posn);
+                } else {
+                    ExprList exprList = ParserUtils.parseArgLists((DefaultAST) argList.getChildASTs().get(0));
+                    return new CallExpr(ref, exprList, ref.posn);
                 }
-                ExprList exprList = new ExprList();
-                Expression initExp = (Expression) argList.getChildASTs().get(0);
-                exprList.add(initExp);
-                if(argList.getChildASTs().size() == 2) {
-                    DefaultAST followingArgs = (DefaultAST) argList.getChildASTs().get(1);
-                    for(AST a : followingArgs.getChildASTs()) {
-                        Expression arg = (Expression) a;
-                        exprList.add(arg);
-                    }
-                } else if(argList.getChildASTs().size() > 2) {
-                    throw new IllegalArgumentException("Expected init expression followed by other arguments, got: " + argList.getChildASTs());
-                }
-                return new CallExpr(ref, exprList, ref.posn);
             }
         }
         throw new IllegalArgumentException("Expected ref, index, or call, got: " + parsed);

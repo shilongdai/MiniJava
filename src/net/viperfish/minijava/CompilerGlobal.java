@@ -2,7 +2,7 @@ package net.viperfish.minijava;
 
 public final class CompilerGlobal {
 
-    public static final int DEBUG_LEVEL = 2;
+    public static final int DEBUG_LEVEL = 1;
 
     public static final boolean DEBUG_1;
 

@@ -3,6 +3,7 @@ package net.viperfish.minijava.parser;
 import net.viperfish.minijava.CompilerGlobal;
 import net.viperfish.minijava.ast.AST;
 import net.viperfish.minijava.ast.DefaultAST;
+import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.ebnf.EBNFGrammar;
 import net.viperfish.minijava.ebnf.ParsableSymbol;
 import net.viperfish.minijava.ebnf.Symbol;
@@ -24,12 +25,12 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
     }
 
     @Override
-    public AST parse() throws IOException, ParsingException, GrammarException {
+    public Package parse() throws IOException, ParsingException, GrammarException {
         String startingSymbolName = grammar.getStartSymbols().iterator().next();
         Symbol startingSymbol = grammar.symbols().get(startingSymbolName);
         ASTConstructor startConstructor = getASTConstructor(startingSymbol);
         List<AST> tempList = parse(Collections.singletonList(startingSymbol));
-        return startConstructor.buildTree(startingSymbol, tempList);
+        return (Package) tempList.get(0);
     }
 
     @Override
@@ -104,8 +105,7 @@ public class EBNFGrammarBackedParser extends BaseRecursiveParser {
         }
         while (keepGoing) {
             List<AST> childs = parse(Collections.singletonList(gamma));
-            AST childAST = gammaCtor.buildTree(gamma, childs);
-            repASTs.add(childAST);
+            repASTs.addAll(childs);
 
             keepGoing = false;
             for (ParsableSymbol p : starters) {

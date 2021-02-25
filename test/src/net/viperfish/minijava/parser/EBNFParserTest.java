@@ -1,5 +1,7 @@
 package net.viperfish.minijava.parser;
 
+import net.viperfish.minijava.ast.ASTDisplay;
+import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.scanner.ParsingException;
 import net.viperfish.minijava.scanner.TokenScanner;
 import org.junit.jupiter.api.Assertions;
@@ -23,7 +25,8 @@ public class EBNFParserTest {
                 TokenScanner scanner = new TokenScanner(inputStream);
                 RecursiveParser parser = new MiniJavaEBNFGrammarParser(scanner);
                 parser.init();
-                parser.parse();
+                Package ast = parser.parse();
+                ast.visit(new ASTDisplay(), "");
             }
         }
     }
@@ -43,8 +46,9 @@ public class EBNFParserTest {
                 if(x.getName().contains("pass")) {
                     try {
                         parser.init();
-                        parser.parse();
-                    } catch (ParsingException | GrammarException e) {
+                        Package ast = parser.parse();
+                        ast.visit(new ASTDisplay(), "");
+                    } catch (Throwable e) {
                         System.out.println("Failed: " + x.getName());
                         Assertions.fail(e);
                     }

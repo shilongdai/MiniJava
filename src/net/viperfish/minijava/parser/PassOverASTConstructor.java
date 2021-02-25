@@ -7,17 +7,13 @@ import java.util.List;
 
 public class PassOverASTConstructor implements ASTConstructor {
 
-    private String symbolName;
 
-    public PassOverASTConstructor(String symbolName) {
-        this.symbolName = symbolName;
+    public PassOverASTConstructor() {
+
     }
 
     @Override
     public AST buildTree(Symbol current, List<AST> parsed) {
-        if(!current.getName().equals(symbolName)) {
-            throw new IllegalArgumentException(String.format("Expected %s, got: %s", symbolName, current.getName()));
-        }
         if(parsed.size() > 1) {
             throw new IllegalArgumentException("Expected Single AST to pass over, got: " + parsed);
         }

@@ -144,6 +144,10 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
                 return new BaseType(TypeKind.BOOLEAN, toConvert.getPosition());
             } else if(toConvert.getTokenType().equals(TokenType.VOID)) {
                 return new BaseType(TypeKind.VOID, toConvert.getPosition());
+            } else if(toConvert.getTokenType().equals(TokenType.PUBLIC) || toConvert.getTokenType().equals(TokenType.PRIVATE)) {
+                return new DefaultAST(toConvert.getPosition(), symbol, new ArrayList<>());
+            } else if(toConvert.getTokenType().equals(TokenType.STATIC)) {
+                return new DefaultAST(toConvert.getPosition(), symbol, new ArrayList<>());
             } else {
                 return null;
             }
