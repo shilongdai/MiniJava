@@ -187,7 +187,7 @@ public class TestEBNFGrammer {
          */
         List<Symbol> uExpList = new ArrayList<>();
         uExpList.add(pExp);
-        uExpList.add(new CompositeSymbol("UExpEnclosed", Arrays.asList(unop, grammer.placeholderName("Expression"))));
+        uExpList.add(new CompositeSymbol("UExpEnclosed", Arrays.asList(unop, grammer.placeholderName("UExp"))));
         Symbol uExp = new DecisionPointSymbol("UExp", uExpList);
 
         /*

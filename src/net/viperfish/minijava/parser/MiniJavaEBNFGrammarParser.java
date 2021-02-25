@@ -148,32 +148,6 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         return null;
     }
 
-    @Override
-    protected AST handleRepeatingPoint(List<Symbol> symbols) throws IOException, ParsingException, GrammarException {
-        Symbol wildCard = symbols.get(0);
-        if (Arrays.asList("AExpRep", "MExpRep", "ExpRep", "EqExpRep", "CExpRep", "RExpRep").contains(wildCard.getName())) {
-            ASTConstructor ctor = getASTConstructor(wildCard);
-            List<AST> childASTs = handleRepeatedExpressions(wildCard.getExpression().get(0));
-            return ctor.buildTree(wildCard, childASTs);
-        } else {
-            return super.handleRepeatingPoint(symbols);
-        }
-    }
-
-    private List<AST> handleRepeatedExpressions(Symbol repeated) throws ParsingException, GrammarException, IOException {
-        ParsableSymbol operator = (ParsableSymbol) repeated.getExpression().get(0);
-        ASTConstructor ctor = getASTConstructor(repeated);
-        List<AST> result = new ArrayList<>();
-        while (operator.isInstance(getToken())) {
-            if (CompilerGlobal.DEBUG_3) {
-                System.out.println("Found following operator, proceeding");
-            }
-            List<AST> childs = parse(Collections.singletonList(repeated));
-            result.addAll(childs);
-        }
-        return result;
-    }
-
     private static EBNFGrammar constructGrammar() {
         EBNFGrammar GRAMMAR = new EBNFGrammar();
 
@@ -333,7 +307,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> uExpList = new ArrayList<>();
         uExpList.add(pExp);
-        uExpList.add(new CompositeSymbol("UExpEnclosed", Arrays.asList(unop, GRAMMAR.placeholderName("Expression"))));
+        uExpList.add(new CompositeSymbol("UExpEnclosed", Arrays.asList(unop, GRAMMAR.placeholderName("UExp"))));
         Symbol uExp = new DecisionPointSymbol("UExp", uExpList);
 
         /*
