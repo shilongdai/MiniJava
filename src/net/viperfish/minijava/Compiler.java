@@ -1,5 +1,7 @@
 package net.viperfish.minijava;
 
+import net.viperfish.minijava.ast.ASTDisplay;
+import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.parser.GrammarException;
 import net.viperfish.minijava.parser.MiniJavaEBNFGrammarParser;
 import net.viperfish.minijava.parser.RecursiveParser;
@@ -23,7 +25,8 @@ public class Compiler {
             TokenScanner scanner = new TokenScanner(inputStream);
             RecursiveParser parser = new MiniJavaEBNFGrammarParser(scanner);
             parser.init();
-            parser.parse();
+            Package ast = parser.parse();
+            ast.visit(new ASTDisplay(), "");
         } catch (FileNotFoundException e) {
             System.out.println(String.format("The file %s is not found", argv[0]));
             System.exit(1);

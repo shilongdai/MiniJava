@@ -36,7 +36,7 @@ public class StandardReferenceRefConstructor implements ASTConstructor {
             return generateBaseRef(chainedIDs.get(0));
         }
         Identifier last = (Identifier) chainedIDs.get(chainedIDs.size() - 1);
-        return new QualRef(generateQualRef(chainedIDs.subList(1, chainedIDs.size())), last, last.posn);
+        return new QualRef(generateQualRef(chainedIDs.subList(0, chainedIDs.size() - 1)), last, last.posn);
     }
 
     private BaseRef generateBaseRef(AST thisOrId) {

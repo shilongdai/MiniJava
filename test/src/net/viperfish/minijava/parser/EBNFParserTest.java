@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 
 public class EBNFParserTest {
 
-    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement", "testComprehensive"};
+    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement", "testComprehensive", "testAST"};
     private static final String[] TEST_FAIL = new String[] {};
 
     @Test
