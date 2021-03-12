@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public class UnaryExpr extends Expression {
     public Operator operator;
     public Expression expr;

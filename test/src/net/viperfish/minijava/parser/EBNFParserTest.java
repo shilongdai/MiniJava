@@ -14,13 +14,13 @@ import java.nio.file.Paths;
 
 public class EBNFParserTest {
 
-    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement", "testComprehensive", "testAST"};
+    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement", "testComprehensive", "testAST", "testNull"};
     private static final String[] TEST_FAIL = new String[] {};
 
     @Test
     public void testParserSuccess() throws IOException, ParsingException, GrammarException {
         for (String resources : TEST_SUCCESS) {
-            System.out.println("Testing: " + resources + "\n\n");
+            System.out.println("\n\nTesting: " + resources);
             try (FileInputStream inputStream = new FileInputStream(Paths.get("resources", "parser",  resources).toFile())) {
                 TokenScanner scanner = new TokenScanner(inputStream);
                 RecursiveParser parser = new MiniJavaEBNFGrammarParser(scanner);

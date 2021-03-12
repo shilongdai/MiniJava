@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public class BaseType extends TypeDenoter {
     public BaseType(TypeKind t, SourcePosition posn) {
         super(t, posn);

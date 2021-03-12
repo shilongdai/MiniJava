@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public abstract class Expression extends AST {
 
     public Expression(SourcePosition posn) {

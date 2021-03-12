@@ -1,7 +1,10 @@
 package net.viperfish.minijava.parser;
 
-import net.viperfish.minijava.ast.*;
+import net.viperfish.minijava.ast.AST;
+import net.viperfish.minijava.ast.BlockStmt;
+import net.viperfish.minijava.ast.StatementList;
 import net.viperfish.minijava.ebnf.Symbol;
+import net.viperfish.minijava.scanner.SourcePosition;
 
 import java.util.List;
 

@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 abstract public class TypeDenoter extends AST {
 
     public TypeKind typeKind;

@@ -7,6 +7,8 @@
 
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public class ArrayType extends TypeDenoter {
 
     public TypeDenoter eltType;

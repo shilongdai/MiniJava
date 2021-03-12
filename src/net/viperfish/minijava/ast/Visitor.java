@@ -67,6 +67,8 @@ public interface Visitor<ArgType, ResultType> {
 
     ResultType visitNewArrayExpr(NewArrayExpr expr, ArgType arg);
 
+    ResultType visitNullExpr(NullExpr expr, ArgType arg);
+
     // References
     ResultType visitThisRef(ThisRef ref, ArgType arg);
 
@@ -82,4 +84,6 @@ public interface Visitor<ArgType, ResultType> {
     ResultType visitIntLiteral(IntLiteral num, ArgType arg);
 
     ResultType visitBooleanLiteral(BooleanLiteral bool, ArgType arg);
+
+    ResultType visitNullLiteral(NullLiteral bool, ArgType arg);
 }

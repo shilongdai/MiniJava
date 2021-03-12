@@ -1,0 +1,13 @@
+class TestNull {
+
+    public static void main(int[] argv, int argc) {
+        Object obj = null;
+        Test[1] = null;
+        Test[] arr = null;
+        boolean r = null == null;
+        if(t == null) {
+            a = null;
+        }
+    }
+
+}

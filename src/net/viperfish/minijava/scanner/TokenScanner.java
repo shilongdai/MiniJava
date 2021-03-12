@@ -29,15 +29,18 @@ public class TokenScanner {
         KEYWORDS.put("true", TokenType.TRUE);
         KEYWORDS.put("false", TokenType.FALSE);
         KEYWORDS.put("new", TokenType.NEW);
+        KEYWORDS.put("null", TokenType.NULL);
     }
 
     private PushbackInputStream input;
     private int position;
+    private int lineNumber;
     private boolean eotReached;
 
     public TokenScanner(InputStream input) {
         this.input = new PushbackInputStream(input);
-        position = 0;
+        position = -1;
+        lineNumber = 1;
         eotReached = false;
     }
 
@@ -47,15 +50,22 @@ public class TokenScanner {
 
     public Token nextToken() throws IOException, ParsingException {
         int next = input.read();
+        position += 1;
 
         while (next != -1) {
-            if (next == '\n' || next == '\t' || next == '\r' || next == ' ') {
+            if(next == '\n' || next == '\r') {
+                lineNumber += 1;
+                next = input.read();
+                position += 1;
+                continue;
+            }
+            if (next == '\t' || next == ' ') {
                 next = input.read();
                 position += 1;
                 continue;
             }
             if (!StandardCharsets.US_ASCII.newEncoder().canEncode((char) next)) {
-                throw new ParsingException(String.format("Unrecognized symbol: %c", (char) next), position);
+                throw new ParsingException(String.format("Unrecognized symbol: %c", (char) next), new SourcePosition(position, lineNumber));
             }
             if (next == '/') {
                 int lookAhead = input.read();
@@ -65,48 +75,51 @@ public class TokenScanner {
                 } else if (lookAhead == '*') {
                     int delta = skipBlockComment(input);
                     if (delta == -1) {
-                        throw new ParsingException("Block comment does not terminate", position);
+                        throw new ParsingException("Block comment does not terminate", new SourcePosition(position, lineNumber));
                     }
+                    position += delta;
                 } else {
                     input.unread(lookAhead);
                     position = position - 1;
-                    return new Token(TokenType.OPERATOR, "/");
+                    return new Token(TokenType.OPERATOR, "/", new SourcePosition(position, lineNumber));
                 }
             } else if (Character.isLetter(next)) {
+                SourcePosition pos = new SourcePosition(position, lineNumber);
                 String segment = readAlphaNumeric(input);
                 position += segment.length();
                 StringBuilder spelling = new StringBuilder();
                 spelling.append((char) next).append(segment);
-                return new Token(KEYWORDS.getOrDefault(spelling.toString(), TokenType.ID), spelling.toString());
+                return new Token(KEYWORDS.getOrDefault(spelling.toString(), TokenType.ID), spelling.toString(), pos);
             } else if (next == '{') {
-                return new Token(TokenType.LEFT_LARGE_BRACKET, "{");
+                return new Token(TokenType.LEFT_LARGE_BRACKET, "{", new SourcePosition(position, lineNumber));
             } else if (next == '}') {
-                return new Token(TokenType.RIGHT_LARGE_BRACKET, "}");
+                return new Token(TokenType.RIGHT_LARGE_BRACKET, "}", new SourcePosition(position, lineNumber));
             } else if (next == ';') {
-                return new Token(TokenType.SEMI_COLON, ";");
+                return new Token(TokenType.SEMI_COLON, ";", new SourcePosition(position, lineNumber));
             } else if (next == '(') {
-                return new Token(TokenType.LEFT_PARANTHESIS, "(");
+                return new Token(TokenType.LEFT_PARANTHESIS, "(", new SourcePosition(position, lineNumber));
             } else if (next == ')') {
-                return new Token(TokenType.RIGHT_PARANTHESIS, ")");
+                return new Token(TokenType.RIGHT_PARANTHESIS, ")", new SourcePosition(position, lineNumber));
             } else if (next == '[') {
-                return new Token(TokenType.LEFT_SQ_BRACKET, "[");
+                return new Token(TokenType.LEFT_SQ_BRACKET, "[", new SourcePosition(position, lineNumber));
             } else if (next == ']') {
-                return new Token(TokenType.RIGHT_SQ_BRACKET, "]");
+                return new Token(TokenType.RIGHT_SQ_BRACKET, "]", new SourcePosition(position, lineNumber));
             } else if (next == ',') {
-                return new Token(TokenType.COMMA, ",");
+                return new Token(TokenType.COMMA, ",", new SourcePosition(position, lineNumber));
             } else if (next == '.') {
-                return new Token(TokenType.DOT, ".");
+                return new Token(TokenType.DOT, ".", new SourcePosition(position, lineNumber));
             } else if (Character.isDigit(next)) {
+                SourcePosition pos = new SourcePosition(position, lineNumber);
                 String digits = readDigits(input);
                 position += digits.length();
                 StringBuilder spelling = new StringBuilder();
                 spelling.append((char) next).append(digits);
-                return new Token(TokenType.NUM, spelling.toString());
+                return new Token(TokenType.NUM, spelling.toString(), pos);
             } else if (next == '>' || next == '<' || next == '=') {
                 int lookAhead = input.read();
                 position += 1;
                 if (lookAhead == '=') {
-                    return new Token(TokenType.OPERATOR, ((char) next) + "=");
+                    return new Token(TokenType.OPERATOR, ((char) next) + "=", new SourcePosition(position, lineNumber));
                 } else {
                     input.unread(lookAhead);
                     position -= 1;
@@ -114,46 +127,49 @@ public class TokenScanner {
                     if (next == '=') {
                         type = TokenType.EQ;
                     }
-                    return new Token(type, String.valueOf((char) next));
+                    return new Token(type, String.valueOf((char) next), new SourcePosition(position, lineNumber));
                 }
             } else if (next == '!') {
                 int lookAhead = input.read();
                 position += 1;
                 if (lookAhead == '=') {
-                    return new Token(TokenType.OPERATOR, "!=");
+                    return new Token(TokenType.OPERATOR, "!=", new SourcePosition(position, lineNumber));
                 } else {
                     input.unread(lookAhead);
                     position -= 1;
-                    return new Token(TokenType.OPERATOR, "!");
+                    return new Token(TokenType.OPERATOR, "!", new SourcePosition(position, lineNumber));
                 }
             } else if (next == '&' || next == '|') {
                 int lookAhead = input.read();
                 position += 1;
                 if (lookAhead == next) {
-                    return new Token(TokenType.OPERATOR, String.valueOf((char) lookAhead) + (char) lookAhead);
+                    return new Token(TokenType.OPERATOR, String.valueOf((char) lookAhead) + (char) lookAhead, new SourcePosition(position, lineNumber));
                 } else {
                     input.unread(lookAhead);
                     position -= 1;
-                    throw new ParsingException(String.format("Unrecognized symbol: %c", (char) next), position);
+                    throw new ParsingException(String.format("Unrecognized symbol: %c", (char) next), new SourcePosition(position, lineNumber));
                 }
             } else if (Arrays.asList('+', '-', '*').contains((char) next)) {
-                return new Token(TokenType.OPERATOR, String.valueOf((char) next));
+                return new Token(TokenType.OPERATOR, String.valueOf((char) next), new SourcePosition(position, lineNumber));
             } else {
-                throw new ParsingException(String.format("Unrecognized symbol: %c", (char) next), position);
+                throw new ParsingException(String.format("Unrecognized symbol: %c", (char) next), new SourcePosition(position, lineNumber));
             }
             next = input.read();
             position += 1;
         }
         eotReached = true;
-        return new Token(TokenType.EOT, "");
+        return new Token(TokenType.EOT, "", new SourcePosition(position, lineNumber));
     }
 
     private int skipLine(InputStream inputStream) throws IOException {
         int next = inputStream.read();
-        int position = 0;
+        int position = 1;
         while (next != -1 && next != '\n' && next != '\r') {
             next = inputStream.read();
             position += 1;
+        }
+        if(next == '\n' || next == '\r') {
+            lineNumber += 1;
         }
         return position;
     }
@@ -161,9 +177,12 @@ public class TokenScanner {
     private int skipBlockComment(InputStream inputStream) throws IOException {
         StringBuilder slider = new StringBuilder("$");
         int next = input.read();
-        int position = 0;
+        int position = 1;
         if (next == -1) {
             return -1;
+        }
+        if(next == '\n' || next == '\r') {
+            lineNumber += 1;
         }
         slider.append((char) next);
 
@@ -176,6 +195,9 @@ public class TokenScanner {
             slider.append((char) next);
             slider.deleteCharAt(0);
             position += 1;
+            if(next == '\n' || next == '\r') {
+                lineNumber += 1;
+            }
         }
         return -1;
     }

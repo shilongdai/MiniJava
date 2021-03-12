@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public abstract class LocalDecl extends Declaration {
 
     public LocalDecl(String name, TypeDenoter t, SourcePosition posn) {

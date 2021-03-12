@@ -2,7 +2,6 @@ package net.viperfish.minijava.parser;
 
 import net.viperfish.minijava.CompilerGlobal;
 import net.viperfish.minijava.ast.AST;
-import net.viperfish.minijava.ast.DefaultAST;
 import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.ebnf.EBNFGrammar;
 import net.viperfish.minijava.ebnf.ParsableSymbol;

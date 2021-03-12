@@ -1,7 +1,5 @@
 package net.viperfish.minijava.scanner;
 
-import net.viperfish.minijava.ast.SourcePosition;
-
 import java.util.Objects;
 
 public class Token {
@@ -10,10 +8,10 @@ public class Token {
     private String spelling;
     private SourcePosition position;
 
-    public Token(TokenType tokenType, String spelling) {
+    public Token(TokenType tokenType, String spelling, SourcePosition pos) {
         this.tokenType = tokenType;
         this.spelling = spelling;
-        this.position = new SourcePosition();
+        this.position = pos;
     }
 
     public TokenType getTokenType() {

@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public class CallStmt extends Statement {
     public Reference methodRef;
     public ExprList argList;

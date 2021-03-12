@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public class VarDecl extends LocalDecl {
 
     public VarDecl(TypeDenoter t, String name, SourcePosition posn) {

@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public abstract class Statement extends AST {
 
     public Statement(SourcePosition posn) {

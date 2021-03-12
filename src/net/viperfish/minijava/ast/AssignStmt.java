@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public class AssignStmt extends Statement {
     public Reference ref;
     public Expression val;

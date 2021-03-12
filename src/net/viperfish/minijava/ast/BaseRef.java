@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public abstract class BaseRef extends Reference {
 
     public BaseRef(SourcePosition posn) {

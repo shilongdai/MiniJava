@@ -13,13 +13,13 @@ public class GrammarException extends Exception {
     private Token actual;
 
     public GrammarException(ParsableSymbol expected, Token actual) {
-        super(String.format("Expected: %s, got: %s, %s", expected.getName(), actual.getTokenType(), actual.getSpelling()));
+        super(String.format("Expected: %s, got: %s, %s, line: %d", expected.getName(), actual.getTokenType(), actual.getSpelling(), actual.getPosition().getLineNumber()));
         this.expected = Arrays.asList(expected);
         this.actual = actual;
     }
 
     public GrammarException(Collection<? extends ParsableSymbol> expected, Token actual) {
-        super(String.format("Expected: %s, got: %s, %s", expected, actual.getTokenType(), actual.getSpelling()));
+        super(String.format("Expected: %s, got: %s, %s, line: %d", expected, actual.getTokenType(), actual.getSpelling(), actual.getPosition().getLineNumber()));
         this.expected = new HashSet<>(expected);
         this.actual = actual;
     }

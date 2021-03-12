@@ -1,7 +1,6 @@
 package net.viperfish.minijava.parser;
 
 import net.viperfish.minijava.ast.AST;
-import net.viperfish.minijava.ast.DefaultAST;
 import net.viperfish.minijava.ebnf.Symbol;
 
 import java.util.ArrayList;

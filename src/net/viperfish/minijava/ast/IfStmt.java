@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public class IfStmt extends Statement {
     public Expression cond;
     public Statement thenStmt;

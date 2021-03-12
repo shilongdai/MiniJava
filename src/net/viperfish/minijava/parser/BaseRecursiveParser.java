@@ -148,6 +148,8 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
                 return new DefaultAST(toConvert.getPosition(), symbol, new ArrayList<>());
             } else if(toConvert.getTokenType().equals(TokenType.STATIC)) {
                 return new DefaultAST(toConvert.getPosition(), symbol, new ArrayList<>());
+            } else if(toConvert.getTokenType().equals(TokenType.NULL)) {
+                return new NullExpr(new NullLiteral(toConvert));
             } else {
                 return null;
             }

@@ -1,6 +1,9 @@
-package net.viperfish.minijava.ast;
+package net.viperfish.minijava.parser;
 
+import net.viperfish.minijava.ast.AST;
+import net.viperfish.minijava.ast.Visitor;
 import net.viperfish.minijava.ebnf.Symbol;
+import net.viperfish.minijava.scanner.SourcePosition;
 
 import java.util.ArrayList;
 import java.util.List;

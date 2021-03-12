@@ -6,6 +6,8 @@
  */
 package net.viperfish.minijava.ast;
 
+import net.viperfish.minijava.scanner.SourcePosition;
+
 public class NewArrayExpr extends NewExpr {
     public TypeDenoter eltType;
     public Expression sizeExpr;

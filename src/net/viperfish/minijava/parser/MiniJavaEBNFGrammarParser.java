@@ -44,6 +44,9 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS.put("VoidOrTypedDecl", new PassOverASTConstructor());
         AST_CONSTRUCTORS.put("FieldOrTypeMethodDecl", new PassOverASTConstructor());
         AST_CONSTRUCTORS.put("ParamOrEmpty", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("expOrNull", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("rExpOrNull", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("eqExpBaseDecision", new PassOverASTConstructor());
 
         // Type
         AST_CONSTRUCTORS.put("sqBrackets", new SQBracketASTConstructor());
@@ -57,6 +60,7 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS.put("EqExp", new OperatorExpressionASTConstructor());
         AST_CONSTRUCTORS.put("CExp", new OperatorExpressionASTConstructor());
         AST_CONSTRUCTORS.put("Expression", new OperatorExpressionASTConstructor());
+        AST_CONSTRUCTORS.put("nullEqComposite", new NullComparisonExpConstructor());
 
         // Expressions - Misc
         AST_CONSTRUCTORS.put("NewExpression", new NewExpressionASTConstructor());
@@ -100,15 +104,10 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                 System.out.println("Non LL1 deciding trailing else");
             }
             if(getToken().getTokenType() == TokenType.ELSE) {
-                for(Symbol s : decidingPoint.getExpression()) {
-                    if(s.getName().equals("ElseStmt")) {
-                        if(CompilerGlobal.DEBUG_3) {
-                            System.out.println("Encountered Else, greedily proceeding");
-                        }
-                        return ctor.buildTree(decidingPoint, parse(Collections.singletonList(s)));
-                    }
+                if(CompilerGlobal.DEBUG_3) {
+                    System.out.println("Encountered Else, greedily proceeding");
                 }
-                throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
+                return manualSelect(ctor, decidingPoint, "ElseStmt");
             }
         } else if(decidingPoint.getName().equals("Statement")) {
             if(getToken().getTokenType() != TokenType.ID) {
@@ -121,31 +120,50 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
                 boolean typeCheck1 = bracketCheck.get(0).getTokenType() == TokenType.LEFT_SQ_BRACKET && bracketCheck.get(1).getTokenType() == TokenType.RIGHT_SQ_BRACKET;
                 boolean typeCheck2 = bracketCheck.get(0).getTokenType() == TokenType.ID;
                 if(typeCheck1 || typeCheck2) {
-                    for(Symbol s : decidingPoint.getExpression()) {
-                        if(s.getName().equals("TypeInitAssign")) {
-                            if(CompilerGlobal.DEBUG_3) {
-                                System.out.println("Peeked [], handling as Type");
-                            }
-                            return ctor.buildTree(decidingPoint, parse(Collections.singletonList(s)));
-                        }
+                    if(CompilerGlobal.DEBUG_3) {
+                        System.out.println("Peeked [], handling as Type");
                     }
-                    throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
+                    return manualSelect(ctor, decidingPoint, "TypeInitAssign");
                 } else {
-                    for(Symbol s : decidingPoint.getExpression()) {
-                        if(s.getName().equals("RefFactoredStmt")) {
-                            if(CompilerGlobal.DEBUG_3) {
-                                System.out.println("Did not peek [], handling as Reference");
-                            }
-                            return ctor.buildTree(decidingPoint, parse(Collections.singletonList(s)));
-                        }
+                    if(CompilerGlobal.DEBUG_3) {
+                        System.out.println("Did not peek [], handling as Reference");
                     }
-                    throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
+                    return manualSelect(ctor, decidingPoint, "RefFactoredStmt");
+                }
+            }
+        } else if(decidingPoint.getName().equals("expOrNull")) {
+            if(getToken().getTokenType() != TokenType.NULL) {
+                if(CompilerGlobal.DEBUG_3) {
+                    System.out.println("No ambiguity, proceeding normally");
+                }
+                return super.handleDecisionPoint(symbols);
+            } else {
+                Token next = peek();
+                if(next.getTokenType() != TokenType.OPERATOR) {
+                    if(CompilerGlobal.DEBUG_3) {
+                        System.out.println("Did not peek operator, handling as Null");
+                    }
+                    return manualSelect(ctor, decidingPoint, "NULL");
+                } else {
+                    if(CompilerGlobal.DEBUG_3) {
+                        System.out.println("Did peek operator, handling as expression");
+                    }
+                    return manualSelect(ctor, decidingPoint, "Expression");
                 }
             }
         } else {
             return super.handleDecisionPoint(symbols);
         }
         return null;
+    }
+
+    private AST manualSelect(ASTConstructor ctor, Symbol decidingPoint, String name) throws ParsingException, GrammarException, IOException {
+        for(Symbol s : decidingPoint.getExpression()) {
+            if(s.getName().equals(name)) {
+                return ctor.buildTree(decidingPoint, parse(Collections.singletonList(s)));
+            }
+        }
+        throw new UnsupportedOperationException("Unsupported MiniJava Grammar");
     }
 
     private static EBNFGrammar constructGrammar() {
@@ -186,6 +204,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         GRAMMAR.registerTerminalSymbol(True);
         ParsableSymbol False = new TokenTypeParsibleSymbol(TokenType.FALSE);
         GRAMMAR.registerTerminalSymbol(False);
+        ParsableSymbol Null = new TokenTypeParsibleSymbol(TokenType.NULL);
+        GRAMMAR.registerTerminalSymbol(Null);
         ParsableSymbol New = new TokenTypeParsibleSymbol(TokenType.NEW);
         GRAMMAR.registerTerminalSymbol(New);
         ParsableSymbol Int = new TokenTypeParsibleSymbol(TokenType.INT);
@@ -342,8 +362,11 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
             RExp ( eqop RExp )*
          */
         List<Symbol> eqExpList = new ArrayList<>();
-        eqExpList.add(rExp);
-        eqExpList.add(new WildCardSymbol("EqExpRep", new CompositeSymbol("EqExpEnclosed", Arrays.asList(eqop, rExp))));
+        Symbol rExpOrNull = new DecisionPointSymbol("rExpOrNull", Arrays.asList(Null, rExp));
+        Symbol nullEqComposite = new CompositeSymbol("nullEqComposite", Arrays.asList(Null, eqop, rExpOrNull));
+        Symbol eqExpBaseDec = new DecisionPointSymbol("eqExpBaseDecision", Arrays.asList(rExp, nullEqComposite));
+        eqExpList.add(eqExpBaseDec);
+        eqExpList.add(new WildCardSymbol("EqExpRep", new CompositeSymbol("EqExpEnclosed", Arrays.asList(eqop, rExpOrNull))));
         Symbol eqExp = new CompositeSymbol("EqExp", eqExpList);
 
         /*
@@ -386,16 +409,17 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
          */
         List<Symbol> statementList = new ArrayList<>();
         List<Symbol> stmtWildCard = new ArrayList<>();
+        Symbol expOrNull = new DecisionPointSymbol("expOrNull", Arrays.asList(expression, Null));
         stmtWildCard.add(llb);
         stmtWildCard.add(new WildCardSymbol("StatementList", GRAMMAR.placeholderName("Statement")));
         stmtWildCard.add(rlb);
         statementList.add(new CompositeSymbol("StatementsBlock", stmtWildCard));
-        statementList.add(new CompositeSymbol("TypeInitAssign", Arrays.asList(type, id, eq, expression, semi)));
+        statementList.add(new CompositeSymbol("TypeInitAssign", Arrays.asList(type, id, eq, expOrNull, semi)));
 
         // left factorization Reference ( = Exp | [Exp] = Exp | (ArgList?) );
         List<Symbol> stmtFactorized = new ArrayList<>();
-        stmtFactorized.add(new CompositeSymbol("RefEqExpStmt", Arrays.asList(eq, expression)));
-        stmtFactorized.add(new CompositeSymbol("RefIdxEqExpStmt", Arrays.asList(GRAMMAR.placeholderName("ExpBracketed"), eq, expression)));
+        stmtFactorized.add(new CompositeSymbol("RefEqExpStmt", Arrays.asList(eq, expOrNull)));
+        stmtFactorized.add(new CompositeSymbol("RefIdxEqExpStmt", Arrays.asList(GRAMMAR.placeholderName("ExpBracketed"), eq, expOrNull)));
         stmtFactorized.add(GRAMMAR.placeholderName("CallArguments"));
         Symbol factorizedStatement = new CompositeSymbol("RefFactoredStmt", Arrays.asList(reference, new DecisionPointSymbol("RefFactoredStmtChoice", stmtFactorized), semi));
         statementList.add(factorizedStatement);

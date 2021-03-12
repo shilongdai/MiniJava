@@ -2,14 +2,14 @@ package net.viperfish.minijava.scanner;
 
 public class ParsingException extends Exception {
 
-    private int position;
+    private SourcePosition position;
 
-    public ParsingException(String message, int position) {
+    public ParsingException(String message, SourcePosition position) {
         super(message);
         this.position = position;
     }
 
-    public int getPosition() {
+    public SourcePosition getPosition() {
         return position;
     }
 }

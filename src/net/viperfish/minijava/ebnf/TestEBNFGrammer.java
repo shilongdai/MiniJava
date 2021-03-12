@@ -1,5 +1,9 @@
 package net.viperfish.minijava.ebnf;
 
+import net.viperfish.minijava.parser.TokenTypeParsibleSymbol;
+import net.viperfish.minijava.parser.TokenTypeWSpellingParsibleSymbol;
+import net.viperfish.minijava.scanner.TokenType;
+
 import java.util.*;
 
 public class TestEBNFGrammer {
@@ -27,81 +31,81 @@ public class TestEBNFGrammer {
     }
 
     private static void testMiniJava() {
-        EBNFGrammar grammer = new EBNFGrammar();
+        EBNFGrammar GRAMMAR = new EBNFGrammar();
 
         // terminals
-        ParsableSymbol id = new StandardTerminalSymbol("id");
-        grammer.registerTerminalSymbol(id);
-        ParsableSymbol tHis = new StandardTerminalSymbol("this");
-        grammer.registerTerminalSymbol(tHis);
-        ParsableSymbol dot = new StandardTerminalSymbol(".");
-        grammer.registerTerminalSymbol(dot);
-        ParsableSymbol lsqb = new StandardTerminalSymbol("[");
-        grammer.registerTerminalSymbol(lsqb);
-        ParsableSymbol rsqb = new StandardTerminalSymbol("]");
-        grammer.registerTerminalSymbol(rsqb);
-        ParsableSymbol lpb = new StandardTerminalSymbol("(");
-        grammer.registerTerminalSymbol(lpb);
-        ParsableSymbol rpb = new StandardTerminalSymbol(")");
-        grammer.registerTerminalSymbol(rpb);
-        ParsableSymbol unop = new StandardTerminalSymbol("unop");
-        grammer.registerTerminalSymbol(unop);
-//        ParsableSymbol binop = new StandardTerminalSymbol("binop");
-//        grammer.registerTerminalSymbol(binop);
-        ParsableSymbol multop = new StandardTerminalSymbol("multop");
-        grammer.registerTerminalSymbol(multop);
-        ParsableSymbol addop = new StandardTerminalSymbol("addop");
-        grammer.registerTerminalSymbol(addop);
-        ParsableSymbol relop = new StandardTerminalSymbol("relop");
-        grammer.registerTerminalSymbol(relop);
-        ParsableSymbol eqop = new StandardTerminalSymbol("eqop");
-        grammer.registerTerminalSymbol(eqop);
-        ParsableSymbol cjop = new StandardTerminalSymbol("cjop");
-        grammer.registerTerminalSymbol(cjop);
-        ParsableSymbol djop = new StandardTerminalSymbol("djop");
-        grammer.registerTerminalSymbol(djop);
-        ParsableSymbol num = new StandardTerminalSymbol("num");
-        grammer.registerTerminalSymbol(num);
-        ParsableSymbol True = new StandardTerminalSymbol("true");
-        grammer.registerTerminalSymbol(True);
-        ParsableSymbol False = new StandardTerminalSymbol("false");
-        grammer.registerTerminalSymbol(False);
-        ParsableSymbol New = new StandardTerminalSymbol("new");
-        grammer.registerTerminalSymbol(New);
-        ParsableSymbol Int = new StandardTerminalSymbol("int");
-        grammer.registerTerminalSymbol(Int);
-        ParsableSymbol llb = new StandardTerminalSymbol("{");
-        grammer.registerTerminalSymbol(llb);
-        ParsableSymbol rlb = new StandardTerminalSymbol("}");
-        grammer.registerTerminalSymbol(rlb);
-        ParsableSymbol Boolean = new StandardTerminalSymbol("boolean");
-        grammer.registerTerminalSymbol(Boolean);
-        ParsableSymbol semi = new StandardTerminalSymbol(";");
-        grammer.registerTerminalSymbol(semi);
-        ParsableSymbol eq = new StandardTerminalSymbol("=");
-        grammer.registerTerminalSymbol(eq);
-        ParsableSymbol comma = new StandardTerminalSymbol(",");
-        grammer.registerTerminalSymbol(comma);
-        ParsableSymbol reTurn = new StandardTerminalSymbol("return");
-        grammer.registerTerminalSymbol(reTurn);
-        ParsableSymbol If = new StandardTerminalSymbol("if");
-        grammer.registerTerminalSymbol(If);
-        ParsableSymbol Else = new StandardTerminalSymbol("else");
-        grammer.registerTerminalSymbol(Else);
-        ParsableSymbol While = new StandardTerminalSymbol("while");
-        grammer.registerTerminalSymbol(While);
-        ParsableSymbol Static = new StandardTerminalSymbol("static");
-        grammer.registerTerminalSymbol(Static);
-        ParsableSymbol Public = new StandardTerminalSymbol("public");
-        grammer.registerTerminalSymbol(Public);
-        ParsableSymbol Private = new StandardTerminalSymbol("private");
-        grammer.registerTerminalSymbol(Private);
-        ParsableSymbol Void = new StandardTerminalSymbol("void");
-        grammer.registerTerminalSymbol(Void);
-        ParsableSymbol Class = new StandardTerminalSymbol("class");
-        grammer.registerTerminalSymbol(Class);
-        ParsableSymbol terminalSymbol = new StandardTerminalSymbol("$");
-        grammer.registerTerminalSymbol(terminalSymbol);
+        ParsableSymbol id = new TokenTypeParsibleSymbol(TokenType.ID);
+        GRAMMAR.registerTerminalSymbol(id);
+        ParsableSymbol tHis = new TokenTypeParsibleSymbol(TokenType.THIS);
+        GRAMMAR.registerTerminalSymbol(tHis);
+        ParsableSymbol dot = new TokenTypeParsibleSymbol(TokenType.DOT);
+        GRAMMAR.registerTerminalSymbol(dot);
+        ParsableSymbol lsqb = new TokenTypeParsibleSymbol(TokenType.LEFT_SQ_BRACKET);
+        GRAMMAR.registerTerminalSymbol(lsqb);
+        ParsableSymbol rsqb = new TokenTypeParsibleSymbol(TokenType.RIGHT_SQ_BRACKET);
+        GRAMMAR.registerTerminalSymbol(rsqb);
+        ParsableSymbol lpb = new TokenTypeParsibleSymbol(TokenType.LEFT_PARANTHESIS);
+        GRAMMAR.registerTerminalSymbol(lpb);
+        ParsableSymbol rpb = new TokenTypeParsibleSymbol(TokenType.RIGHT_PARANTHESIS);
+        GRAMMAR.registerTerminalSymbol(rpb);
+        ParsableSymbol unop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("!", "-"));
+        GRAMMAR.registerTerminalSymbol(unop);
+        ParsableSymbol multop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("*", "/"));
+        GRAMMAR.registerTerminalSymbol(multop);
+        ParsableSymbol addop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("+", "-"));
+        GRAMMAR.registerTerminalSymbol(addop);
+        ParsableSymbol relop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("<", "<=", ">", ">="));
+        GRAMMAR.registerTerminalSymbol(relop);
+        ParsableSymbol eqop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Arrays.asList("==", "!="));
+        GRAMMAR.registerTerminalSymbol(eqop);
+        ParsableSymbol cjop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Collections.singletonList("&&"));
+        GRAMMAR.registerTerminalSymbol(cjop);
+        ParsableSymbol djop = new TokenTypeWSpellingParsibleSymbol(TokenType.OPERATOR, Collections.singletonList("||"));
+        GRAMMAR.registerTerminalSymbol(djop);
+        ParsableSymbol num = new TokenTypeParsibleSymbol(TokenType.NUM);
+        GRAMMAR.registerTerminalSymbol(num);
+        ParsableSymbol True = new TokenTypeParsibleSymbol(TokenType.TRUE);
+        GRAMMAR.registerTerminalSymbol(True);
+        ParsableSymbol False = new TokenTypeParsibleSymbol(TokenType.FALSE);
+        GRAMMAR.registerTerminalSymbol(False);
+        ParsableSymbol Null = new TokenTypeParsibleSymbol(TokenType.NULL);
+        GRAMMAR.registerTerminalSymbol(Null);
+        ParsableSymbol New = new TokenTypeParsibleSymbol(TokenType.NEW);
+        GRAMMAR.registerTerminalSymbol(New);
+        ParsableSymbol Int = new TokenTypeParsibleSymbol(TokenType.INT);
+        GRAMMAR.registerTerminalSymbol(Int);
+        ParsableSymbol llb = new TokenTypeParsibleSymbol(TokenType.LEFT_LARGE_BRACKET);
+        GRAMMAR.registerTerminalSymbol(llb);
+        ParsableSymbol rlb = new TokenTypeParsibleSymbol(TokenType.RIGHT_LARGE_BRACKET);
+        GRAMMAR.registerTerminalSymbol(rlb);
+        ParsableSymbol Boolean = new TokenTypeParsibleSymbol(TokenType.BOOLEAN);
+        GRAMMAR.registerTerminalSymbol(Boolean);
+        ParsableSymbol semi = new TokenTypeParsibleSymbol(TokenType.SEMI_COLON);
+        GRAMMAR.registerTerminalSymbol(semi);
+        ParsableSymbol eq = new TokenTypeParsibleSymbol(TokenType.EQ);
+        GRAMMAR.registerTerminalSymbol(eq);
+        ParsableSymbol comma = new TokenTypeParsibleSymbol(TokenType.COMMA);
+        GRAMMAR.registerTerminalSymbol(comma);
+        ParsableSymbol reTurn = new TokenTypeParsibleSymbol(TokenType.RETURN);
+        GRAMMAR.registerTerminalSymbol(reTurn);
+        ParsableSymbol If = new TokenTypeParsibleSymbol(TokenType.IF);
+        GRAMMAR.registerTerminalSymbol(If);
+        ParsableSymbol Else = new TokenTypeParsibleSymbol(TokenType.ELSE);
+        GRAMMAR.registerTerminalSymbol(Else);
+        ParsableSymbol While = new TokenTypeParsibleSymbol(TokenType.WHILE);
+        GRAMMAR.registerTerminalSymbol(While);
+        ParsableSymbol Static = new TokenTypeParsibleSymbol(TokenType.STATIC);
+        GRAMMAR.registerTerminalSymbol(Static);
+        ParsableSymbol Public = new TokenTypeParsibleSymbol(TokenType.PUBLIC);
+        GRAMMAR.registerTerminalSymbol(Public);
+        ParsableSymbol Private = new TokenTypeParsibleSymbol(TokenType.PRIVATE);
+        GRAMMAR.registerTerminalSymbol(Private);
+        ParsableSymbol Void = new TokenTypeParsibleSymbol(TokenType.VOID);
+        GRAMMAR.registerTerminalSymbol(Void);
+        ParsableSymbol Class = new TokenTypeParsibleSymbol(TokenType.CLASS);
+        GRAMMAR.registerTerminalSymbol(Class);
+        ParsableSymbol terminalSymbol = new TokenTypeParsibleSymbol(TokenType.EOT);
+        GRAMMAR.registerTerminalSymbol(terminalSymbol);
 
         // non terminals
 
@@ -113,7 +117,7 @@ public class TestEBNFGrammer {
         referenceList.add(dotIdContinue);
 
         Symbol reference = new CompositeSymbol("Reference", referenceList);
-        grammer.registerNonTerminalSymbol(reference);
+        GRAMMAR.registerNonTerminalSymbol(reference);
 
         // Type ::= int | boolean | id | ( int | id ) []
         // -> int | boolean | id | int [ ] | id [ ] -> boolean | int (ε | [ ] ) | id ( ε | [ ] )
@@ -129,7 +133,7 @@ public class TestEBNFGrammer {
         typeList.add(idType);
 
         Symbol type = new DecisionPointSymbol("Type", typeList);
-        grammer.registerNonTerminalSymbol(type);
+        GRAMMAR.registerNonTerminalSymbol(type);
 
         /*
         Expression ::=
@@ -152,11 +156,11 @@ public class TestEBNFGrammer {
         List<Symbol> bExpList = new ArrayList<>();
         // apply left factorization Reference ( [ Expression ] | ( ArgumentList? ) | ε )
         List<Symbol> factorizedExpressionList = new ArrayList<>();
-        Symbol argListOrEmpty = new DecisionPointSymbol("argListEmpty", Arrays.asList(grammer.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
-        factorizedExpressionList.add(new CompositeSymbol("ExpBracketed", Arrays.asList(lsqb, grammer.placeholderName("Expression"), rsqb)));
+        Symbol argListOrEmpty = new DecisionPointSymbol("argListEmpty", Arrays.asList(GRAMMAR.placeholderName("ArgumentList"), EBNFGrammar.EMPTY_STRING));
+        factorizedExpressionList.add(new CompositeSymbol("ExpBracketed", Arrays.asList(lsqb, GRAMMAR.placeholderName("Expression"), rsqb)));
         factorizedExpressionList.add(new CompositeSymbol("CallArguments", Arrays.asList(lpb, argListOrEmpty, rpb)));
         factorizedExpressionList.add(EBNFGrammar.EMPTY_STRING);
-        bExpList.add(new CompositeSymbol("RefExtendedExp", Arrays.asList(reference, new DecisionPointSymbol(factorizedExpressionList))));
+        bExpList.add(new CompositeSymbol("RefExtendedExp", Arrays.asList(reference, new DecisionPointSymbol("ChooseRefExpType", factorizedExpressionList))));
         bExpList.add(num);
         bExpList.add(True);
         bExpList.add(False);
@@ -164,9 +168,9 @@ public class TestEBNFGrammer {
         List<Symbol> rhsNewList = new ArrayList<>();
         List<Symbol> rhsFactoredList = new ArrayList<>();
         rhsFactoredList.add(new CompositeSymbol(Arrays.asList(lpb, rpb)));
-        rhsFactoredList.add(grammer.placeholderName("ExpBracketed"));
-        rhsNewList.add(new CompositeSymbol("NewIdRelated", Arrays.asList(id, new DecisionPointSymbol(rhsFactoredList))));
-        rhsNewList.add(new CompositeSymbol("NewIntArray", Arrays.asList(Int, grammer.placeholderName("ExpBracketed"))));
+        rhsFactoredList.add(GRAMMAR.placeholderName("ExpBracketed"));
+        rhsNewList.add(new CompositeSymbol("NewIdRelated", Arrays.asList(id, new DecisionPointSymbol("NewIdDecide", rhsFactoredList))));
+        rhsNewList.add(new CompositeSymbol("NewIntArray", Arrays.asList(Int, GRAMMAR.placeholderName("ExpBracketed"))));
         Symbol rhsNew = new DecisionPointSymbol("NewRHS", rhsNewList);
         Symbol newDec = new CompositeSymbol("NewExpression", Arrays.asList(New, rhsNew));
         bExpList.add(newDec);
@@ -177,7 +181,7 @@ public class TestEBNFGrammer {
             (Exp) | BExp
          */
         List<Symbol> pExpList = new ArrayList<>();
-        pExpList.add(new CompositeSymbol("PExpEnclosed", Arrays.asList(lpb, grammer.placeholderName("Expression"), rpb)));
+        pExpList.add(new CompositeSymbol("PExpEnclosed", Arrays.asList(lpb, GRAMMAR.placeholderName("Expression"), rpb)));
         pExpList.add(bExp);
         Symbol pExp = new DecisionPointSymbol("PExp", pExpList);
 
@@ -187,7 +191,7 @@ public class TestEBNFGrammer {
          */
         List<Symbol> uExpList = new ArrayList<>();
         uExpList.add(pExp);
-        uExpList.add(new CompositeSymbol("UExpEnclosed", Arrays.asList(unop, grammer.placeholderName("UExp"))));
+        uExpList.add(new CompositeSymbol("UExpEnclosed", Arrays.asList(unop, GRAMMAR.placeholderName("UExp"))));
         Symbol uExp = new DecisionPointSymbol("UExp", uExpList);
 
         /*
@@ -214,7 +218,7 @@ public class TestEBNFGrammer {
          */
         List<Symbol> rExpList = new ArrayList<>();
         rExpList.add(aExp);
-        rExpList.add(new WildCardSymbol("RExpRep", new CompositeSymbol(Arrays.asList(relop, aExp))));
+        rExpList.add(new WildCardSymbol("RExpRep", new CompositeSymbol("RExpEnclosed", Arrays.asList(relop, aExp))));
         Symbol rExp = new CompositeSymbol("RExp", rExpList);
 
         /*
@@ -222,8 +226,11 @@ public class TestEBNFGrammer {
             RExp ( eqop RExp )*
          */
         List<Symbol> eqExpList = new ArrayList<>();
-        eqExpList.add(rExp);
-        eqExpList.add(new WildCardSymbol("EqExpRep", new CompositeSymbol(Arrays.asList(eqop, rExp))));
+        Symbol rExpOrNull = new DecisionPointSymbol("rExpOrNull", Arrays.asList(Null, rExp));
+        Symbol nullEqComposite = new CompositeSymbol("nullEqComposite", Arrays.asList(Null, eqop, rExpOrNull));
+        Symbol eqExpBaseDec = new DecisionPointSymbol("eqExpBaseDecision", Arrays.asList(rExp, nullEqComposite));
+        eqExpList.add(eqExpBaseDec);
+        eqExpList.add(new WildCardSymbol("EqExpRep", new CompositeSymbol("EqExpEnclosed", Arrays.asList(eqop, rExpOrNull))));
         Symbol eqExp = new CompositeSymbol("EqExp", eqExpList);
 
         /*
@@ -232,7 +239,7 @@ public class TestEBNFGrammer {
          */
         List<Symbol> cExpList = new ArrayList<>();
         cExpList.add(eqExp);
-        cExpList.add(new WildCardSymbol("CExpRep", new CompositeSymbol(Arrays.asList(cjop, eqExp))));
+        cExpList.add(new WildCardSymbol("CExpRep", new CompositeSymbol("CExpEnclosed", Arrays.asList(cjop, eqExp))));
         Symbol cExp = new CompositeSymbol("CExp", cExpList);
 
         /*
@@ -241,17 +248,17 @@ public class TestEBNFGrammer {
          */
         List<Symbol> expressionList = new ArrayList<>();
         expressionList.add(cExp);
-        expressionList.add(new WildCardSymbol("ExpRep", new CompositeSymbol(Arrays.asList(djop, cExp))));
+        expressionList.add(new WildCardSymbol("ExpRep", new CompositeSymbol("ExpEnclosed", Arrays.asList(djop, cExp))));
         Symbol expression = new CompositeSymbol("Expression", expressionList);
-        grammer.registerNonTerminalSymbol(expression);
+        GRAMMAR.registerNonTerminalSymbol(expression);
 
         // ArgumentList ::= Expression ( , Expression )*
         List<Symbol> argList = new ArrayList<>();
         argList.add(expression);
-        argList.add(new WildCardSymbol("FollowingExpArgs", new CompositeSymbol("CommaExpArg", Arrays.asList(comma, expression))));
+        argList.add(new WildCardSymbol(new CompositeSymbol("ArgListEnclosed", Arrays.asList(comma, expression))));
 
         Symbol argumentList = new CompositeSymbol("ArgumentList", argList);
-        grammer.registerNonTerminalSymbol(argumentList);
+        GRAMMAR.registerNonTerminalSymbol(argumentList);
 
         /*
         Statement ::=
@@ -266,17 +273,18 @@ public class TestEBNFGrammer {
          */
         List<Symbol> statementList = new ArrayList<>();
         List<Symbol> stmtWildCard = new ArrayList<>();
+        Symbol expOrNull = new DecisionPointSymbol("expOrNull", Arrays.asList(expression, Null));
         stmtWildCard.add(llb);
-        stmtWildCard.add(new WildCardSymbol("StatementList", grammer.placeholderName("Statement")));
+        stmtWildCard.add(new WildCardSymbol("StatementList", GRAMMAR.placeholderName("Statement")));
         stmtWildCard.add(rlb);
         statementList.add(new CompositeSymbol("StatementsBlock", stmtWildCard));
-        statementList.add(new CompositeSymbol("TypeInitAssign", Arrays.asList(type, id, eq, expression, semi)));
+        statementList.add(new CompositeSymbol("TypeInitAssign", Arrays.asList(type, id, eq, expOrNull, semi)));
 
         // left factorization Reference ( = Exp | [Exp] = Exp | (ArgList?) );
         List<Symbol> stmtFactorized = new ArrayList<>();
-        stmtFactorized.add(new CompositeSymbol(Arrays.asList(eq, expression)));
-        stmtFactorized.add(new CompositeSymbol(Arrays.asList(grammer.placeholderName("ExpBracketed"), eq, expression)));
-        stmtFactorized.add(grammer.placeholderName("CallArguments"));
+        stmtFactorized.add(new CompositeSymbol("RefEqExpStmt", Arrays.asList(eq, expOrNull)));
+        stmtFactorized.add(new CompositeSymbol("RefIdxEqExpStmt", Arrays.asList(GRAMMAR.placeholderName("ExpBracketed"), eq, expOrNull)));
+        stmtFactorized.add(GRAMMAR.placeholderName("CallArguments"));
         Symbol factorizedStatement = new CompositeSymbol("RefFactoredStmt", Arrays.asList(reference, new DecisionPointSymbol("RefFactoredStmtChoice", stmtFactorized), semi));
         statementList.add(factorizedStatement);
 
@@ -286,34 +294,34 @@ public class TestEBNFGrammer {
         ifStmtList.add(lpb);
         ifStmtList.add(expression);
         ifStmtList.add(rpb);
-        ifStmtList.add(grammer.placeholderName("Statement"));
-        ifStmtList.add(new DecisionPointSymbol("TrailingElse", Arrays.asList(new CompositeSymbol("ElseStmt", Arrays.asList(Else, grammer.placeholderName("Statement"))), EBNFGrammar.EMPTY_STRING)));
+        ifStmtList.add(GRAMMAR.placeholderName("Statement"));
+        ifStmtList.add(new DecisionPointSymbol("TrailingElse", Arrays.asList(new CompositeSymbol("ElseStmt", Arrays.asList(Else, GRAMMAR.placeholderName("Statement"))), EBNFGrammar.EMPTY_STRING)));
         statementList.add(new CompositeSymbol("IfStmt", ifStmtList));
-        statementList.add(new CompositeSymbol("WhileStmt", Arrays.asList(While, lpb, expression, rpb, grammer.placeholderName("Statement"))));
+        statementList.add(new CompositeSymbol("WhileStmt", Arrays.asList(While, lpb, expression, rpb, GRAMMAR.placeholderName("Statement"))));
 
         Symbol statement = new DecisionPointSymbol("Statement", statementList);
-        grammer.registerNonTerminalSymbol(statement);
+        GRAMMAR.registerNonTerminalSymbol(statement);
 
         // ParameterList ::= Type id ( , Type id )*
         List<Symbol> paramList = new ArrayList<>();
-        paramList.add(type);
-        paramList.add(id);
-        paramList.add(new WildCardSymbol(new CompositeSymbol(Arrays.asList(comma, type, id))));
+        Symbol paramDecl = new CompositeSymbol("ParamDecl", Arrays.asList(type, id));
+        paramList.add(paramDecl);
+        paramList.add(new WildCardSymbol(new CompositeSymbol("ParameterListEnclosed", Arrays.asList(comma, paramDecl))));
 
         Symbol parameterList = new CompositeSymbol("ParameterList", paramList);
-        grammer.registerNonTerminalSymbol(parameterList);
+        GRAMMAR.registerNonTerminalSymbol(parameterList);
 
         // Access ::= static ?
         Symbol access = new DecisionPointSymbol("Access", Arrays.asList(Static, EBNFGrammar.EMPTY_STRING));
-        grammer.registerNonTerminalSymbol(access);
+        GRAMMAR.registerNonTerminalSymbol(access);
 
         // Visibility ::= ( public | private )?
         List<Symbol> visibilityList = new ArrayList<>();
-        visibilityList.add(new DecisionPointSymbol(Arrays.asList(Public, Private)));
+        visibilityList.add(new DecisionPointSymbol("PublicPrivate", Arrays.asList(Public, Private)));
         visibilityList.add(EBNFGrammar.EMPTY_STRING);
 
         Symbol visibility = new DecisionPointSymbol("Visibility", visibilityList);
-        grammer.registerNonTerminalSymbol(visibility);
+        GRAMMAR.registerNonTerminalSymbol(visibility);
 
         // MethodDeclaration ::= Visibility Access ( Type | void ) id ( ParameterList? ) {Statement*}
         List<Symbol> methodDeclarationList = new ArrayList<>();
@@ -323,15 +331,13 @@ public class TestEBNFGrammer {
         methodDeclarationList.add(new DecisionPointSymbol(Arrays.asList(type, Void)));
         methodDeclarationList.add(id);
         methodDistinguished.add(lpb);
-        methodDistinguished.add(new DecisionPointSymbol(Arrays.asList(parameterList, EBNFGrammar.EMPTY_STRING)));
+        methodDistinguished.add(new DecisionPointSymbol("ParamOrEmpty", Arrays.asList(parameterList, EBNFGrammar.EMPTY_STRING)));
         methodDistinguished.add(rpb);
-        methodDistinguished.add(llb);
-        methodDistinguished.add(new WildCardSymbol(statement));
-        methodDistinguished.add(rlb);
+        methodDistinguished.add(GRAMMAR.placeholderName("StatementsBlock"));
         methodDeclarationList.addAll(methodDistinguished);
 
         Symbol methodDeclaration = new CompositeSymbol("MethodDeclaration", methodDeclarationList);
-        grammer.registerNonTerminalSymbol(methodDeclaration);
+        GRAMMAR.registerNonTerminalSymbol(methodDeclaration);
 
         // FieldDeclaration ::= Visibility Access Type id ;
         List<Symbol> fieldDecList = new ArrayList<>();
@@ -342,7 +348,7 @@ public class TestEBNFGrammer {
         fieldDecList.add(semi);
 
         Symbol fieldDeclaration = new CompositeSymbol("FieldDeclaration", fieldDecList);
-        grammer.registerNonTerminalSymbol(fieldDeclaration);
+        GRAMMAR.registerNonTerminalSymbol(fieldDeclaration);
 
         // ClassDeclaration ::= class id { ( FieldDeclaration | MethodDeclaration )* }
         List<Symbol> classDecList = new ArrayList<>();
@@ -353,22 +359,22 @@ public class TestEBNFGrammer {
         List<Symbol> typedDeclaration = new ArrayList<>();
         typedDeclaration.add(type);
         typedDeclaration.add(id);
-        typedDeclaration.add(new DecisionPointSymbol(Arrays.asList(semi, new CompositeSymbol(methodDistinguished))));
+        typedDeclaration.add(new DecisionPointSymbol("FieldOrTypeMethodDecl", Arrays.asList(semi, new CompositeSymbol("MethodDeclExtension", methodDistinguished))));
         List<Symbol> voidDeclaration = new ArrayList<>();
         voidDeclaration.add(Void);
         voidDeclaration.add(id);
         voidDeclaration.addAll(methodDistinguished);
-        Symbol decomposedDecs = new CompositeSymbol(Arrays.asList(visibility, access, new DecisionPointSymbol(Arrays.asList(new CompositeSymbol(typedDeclaration), new CompositeSymbol(voidDeclaration)))));
+        Symbol decomposedDecs = new CompositeSymbol("ClassMemberDecl", Arrays.asList(visibility, access, new DecisionPointSymbol("VoidOrTypedDecl", Arrays.asList(new CompositeSymbol("TypedDecl", typedDeclaration), new CompositeSymbol("VoidDecl", voidDeclaration)))));
         classDecList.add(new WildCardSymbol(decomposedDecs));
         classDecList.add(rlb);
 
         Symbol classDeclaration = new CompositeSymbol("ClassDeclaration", classDecList);
-        grammer.registerNonTerminalSymbol(classDeclaration);
+        GRAMMAR.registerNonTerminalSymbol(classDeclaration);
 
         Symbol program = new CompositeSymbol("Program", Arrays.asList(new WildCardSymbol(classDeclaration), terminalSymbol));
-        grammer.registerStartSymbol(program);
+        GRAMMAR.registerStartSymbol(program);
 
-        printGrammarProperties(grammer);
+        printGrammarProperties(GRAMMAR);
     }
 
     private static void testGrammar2() {
