@@ -57,7 +57,7 @@ public class EBNFParserTest {
                         parser.init();
                         parser.parse();
                     } catch (ParsingException | GrammarException e) {
-                        System.out.println("successfully failed");
+                        System.out.println("successfully failed: " + e.getMessage());
                     }
                 }
             }

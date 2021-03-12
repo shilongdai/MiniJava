@@ -15,10 +15,10 @@ public class ReturnStmtASTConstructor implements ASTConstructor {
             throw new IllegalArgumentException("Expected returnStmt, got: " + current.getName());
         }
 
-        if(parsed.size() == 1) {
-            return new ReturnStmt((Expression) parsed.get(0), parsed.get(0).posn);
-        } else if(parsed.isEmpty()) {
-            return new ReturnStmt(null, null);
+        if(parsed.size() == 2) {
+            return new ReturnStmt((Expression) parsed.get(1), parsed.get(1).posn);
+        } else if(parsed.size() == 1) {
+            return new ReturnStmt(null, parsed.get(0).posn);
         } else {
             throw new IllegalArgumentException("Expected expression or nothing, got: " + parsed);
         }

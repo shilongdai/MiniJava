@@ -33,4 +33,9 @@ public class SourcePosition {
     public int hashCode() {
         return Objects.hash(absPosition, lineNumber);
     }
+
+    @Override
+    public String toString() {
+        return String.format("Idx: %d Line: %d", this.absPosition, this.lineNumber);
+    }
 }
