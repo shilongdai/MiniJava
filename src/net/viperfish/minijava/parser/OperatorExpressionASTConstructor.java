@@ -1,6 +1,9 @@
 package net.viperfish.minijava.parser;
 
-import net.viperfish.minijava.ast.*;
+import net.viperfish.minijava.ast.AST;
+import net.viperfish.minijava.ast.BinaryExpr;
+import net.viperfish.minijava.ast.Expression;
+import net.viperfish.minijava.ast.Operator;
 import net.viperfish.minijava.ebnf.Symbol;
 
 import java.util.ArrayList;
@@ -48,9 +51,9 @@ public class OperatorExpressionASTConstructor implements ASTConstructor {
             Expression right = (Expression) expressions.get(2);
             return new BinaryExpr(ops, left, right, left.posn);
         }
-        Expression left = (Expression) expressions.get(0);
-        Operator ops = (Operator) expressions.get(1);
-        Expression right = buildBinExpr(expressions.subList(2, expressions.size()));
+        Expression left = buildBinExpr(expressions.subList(0, expressions.size() - 2));
+        Operator ops = (Operator) expressions.get(expressions.size() - 2);
+        Expression right = (Expression) expressions.get(expressions.size() - 1);
         return new BinaryExpr(ops, left, right, left.posn);
     }
 }
