@@ -11,6 +11,8 @@ import net.viperfish.minijava.scanner.Token;
 
 public class Identifier extends Terminal {
 
+    public Declaration dominantDecl;
+
     public Identifier(Token t) {
         super(t);
     }

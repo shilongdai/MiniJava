@@ -9,7 +9,7 @@ import java.util.*;
 public class TestEBNFGrammer {
 
     public static void main(String argv[]) {
-        testMiniJava();
+        testGrammar4();
     }
 
     private static void testGrammar1() {
@@ -414,6 +414,30 @@ public class TestEBNFGrammer {
         grammar.registerTerminalSymbol(c);
         grammar.registerNonTerminalSymbol(A);
         grammar.registerStartSymbol(S);
+        printGrammarProperties(grammar);
+    }
+
+    private static void testGrammar4() {
+        EBNFGrammar grammar = new EBNFGrammar();
+        ParsableSymbol num = new StandardTerminalSymbol("num");
+        ParsableSymbol minus = new StandardTerminalSymbol("-");
+        ParsableSymbol plus = new StandardTerminalSymbol("+");
+        ParsableSymbol eot = new StandardTerminalSymbol("$");
+        Symbol G = new CompositeSymbol("G", Arrays.asList(num));
+        Symbol dec = new DecisionPointSymbol(Arrays.asList(new CompositeSymbol(Arrays.asList(minus, grammar.placeholderName("F"))), EBNFGrammar.EMPTY_STRING));
+        Symbol F = new CompositeSymbol("F", Arrays.asList(G, dec));
+        Symbol E = new CompositeSymbol("E", Arrays.asList(F, new WildCardSymbol(new CompositeSymbol(Arrays.asList(plus, F)))));
+        Symbol S = new CompositeSymbol("S", Arrays.asList(E, eot));
+
+        grammar.registerTerminalSymbol(num);
+        grammar.registerTerminalSymbol(minus);
+        grammar.registerTerminalSymbol(plus);
+        grammar.registerTerminalSymbol(eot);
+        grammar.registerNonTerminalSymbol(G);
+        grammar.registerNonTerminalSymbol(F);
+        grammar.registerNonTerminalSymbol(E);
+        grammar.registerStartSymbol(S);
+
         printGrammarProperties(grammar);
     }
 

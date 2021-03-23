@@ -53,7 +53,12 @@ public class TokenScanner {
         position += 1;
 
         while (next != -1) {
-            if(next == '\n' || next == '\r') {
+            if(next == '\r') {
+                next = input.read();
+                position += 1;
+                continue;
+            }
+            if(next == '\n') {
                 lineNumber += 1;
                 next = input.read();
                 position += 1;
@@ -158,7 +163,9 @@ public class TokenScanner {
             position += 1;
         }
         eotReached = true;
-        return new Token(TokenType.EOT, "", new SourcePosition(position, lineNumber));
+
+        SourcePosition position = new SourcePosition(this.position, lineNumber);
+        return new Token(TokenType.EOT, "", position);
     }
 
     private int skipLine(InputStream inputStream) throws IOException {

@@ -1,13 +1,23 @@
 class Matrix {
 
+    // comment 1
+
     public static Matrix EMPTY;
     private static Matrix I1;
     private static Matrix I2;
     private static Matrix I3;
 
+    /* comment 2 */
+
     private int[] elements;
     private int rows;
     private int columns;
+
+    /*
+    comment 3
+
+
+     */
 
     private boolean isSymmetrical;
     private boolean isSquare;

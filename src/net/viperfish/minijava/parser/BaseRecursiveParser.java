@@ -121,6 +121,10 @@ public abstract class BaseRecursiveParser implements RecursiveParser {
             System.out.println(String.format("Comparing: %s vs %s", symbol.getName(), currentToken.getSpelling()));
         }
         if (symbol.isInstance(currentToken)) {
+            if(CompilerGlobal.DEBUG_3) {
+                System.out.println(String.format("Accepted %s at line %d, idx %d", currentToken.getSpelling(), currentToken.getPosition().getLineNumber(), currentToken.getPosition().getAbsPosition()));
+            }
+
             Token toConvert = currentToken;
             if (!peeked.isEmpty()) {
                 currentToken = peeked.remove(0);
