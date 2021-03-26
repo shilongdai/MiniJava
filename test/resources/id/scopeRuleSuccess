@@ -1,0 +1,20 @@
+class TestScope {
+
+    public static void main() {
+        if( 1 == 1) {
+            int a = 0;
+            if( 2 == 2) {
+                int TestScope = 2;
+                if(TestScope == 3) {
+                    int main = 4;
+                    while(main <= 3) {
+                        int c = TestScope;
+                        c = main + a;
+                        main();
+                    }
+                }
+            }
+        }
+    }
+
+}

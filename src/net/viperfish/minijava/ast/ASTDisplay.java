@@ -354,7 +354,7 @@ public class ASTDisplay implements Visitor<String, Object> {
     ///////////////////////////////////////////////////////////////////////////////
 
     public Object visitIdentifier(Identifier id, String arg) {
-        show(arg, quote(id.spelling) + " " + id.toString());
+        show(arg, quote(id.spelling) + " " + id.toString() + " Declared: " + id.dominantDecl.posn.getLineNumber());
         return null;
     }
 

@@ -1,0 +1,75 @@
+class Vector {
+    private int[] elements;
+    private int vectorLength;
+
+    public void initVector(int length) {
+        this.elements = new int[length];
+        this.vectorLength = length;
+    }
+
+    public int get(int index) {
+        if(index < length()) {
+            return this.elements[index];
+        } else {
+            return -1;
+        }
+    }
+
+    public void set(int index, int val) {
+        if(index >= length()) {
+            return -1;
+        } else {
+            this.elements[index] = val;
+        }
+    }
+
+    public int length() {
+        return vectorLength;
+    }
+
+    public int dotProduct(Vector other) {
+        if(this.length() == other.length()) {
+            int current = 0;
+            int sum = 0;
+            while (current < length()) {
+                sum = sum + other.elements[current] * get(current);
+                current = current + 1;
+            }
+            return sum;
+        } else {
+            return -1;
+        }
+    }
+
+    public boolean equals(Vector other) {
+        if(this.length() != other.length()) {
+            return false;
+        }
+        int current = 0;
+        while (current < length()) {
+            if(this.elements[current] != other.elements[current]) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+class Main {
+    public static int main() {
+        Vector r10 = new Vector();
+        r10.initVector(10);
+        int i = 0;
+        while(i < 10) {
+            r10.set(i, i);
+            i = i + 1;
+        }
+
+        Vector r2 = new Vector();
+        r2.initVector(2);
+        i = 0;
+        r2.set(0, 1);
+        r2.set(1, 0);
+        r10.dotProduct(r2);
+    }
+}

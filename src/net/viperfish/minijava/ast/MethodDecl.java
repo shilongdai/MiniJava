@@ -22,4 +22,5 @@ public class MethodDecl extends MemberDecl {
     public <A, R> R visit(Visitor<A, R> v, A o) {
         return v.visitMethodDecl(this, o);
     }
+
 }

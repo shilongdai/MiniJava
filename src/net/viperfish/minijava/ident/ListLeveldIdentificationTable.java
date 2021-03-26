@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ListLeveldIdentificationTable implements LeveledIdentificationTable {
+public class ListLeveldIdentificationTable implements FilterableIdentificationTable {
 
     private int currentLevel;
     private List<Map<String, Declaration>> decls;
@@ -47,6 +47,19 @@ public class ListLeveldIdentificationTable implements LeveledIdentificationTable
     }
 
     @Override
+    public List<LeveledDecl> getAllLeveledDeclarations(String id) {
+        List<LeveledDecl> result = new ArrayList<>();
+        for(int i = this.currentLevel; i >= 0; --i) {
+            Map<String, Declaration> current = this.decls.get(i);
+            if(current.containsKey(id)) {
+                LeveledDecl decl = new LeveledDecl(current.get(id), i);
+                result.add(decl);
+            }
+        }
+        return result;
+    }
+
+    @Override
     public boolean contains(String id, int minLevel) {
         LeveledDecl l = getLevelDeclaration(id);
         if(l == null) {
@@ -62,11 +75,20 @@ public class ListLeveldIdentificationTable implements LeveledIdentificationTable
 
     @Override
     public Declaration getDeclaration(String id) {
-        return getLevelDeclaration(id).getDec();
+        LeveledDecl dec = getLevelDeclaration(id);
+        if(dec != null) {
+            return dec.getDec();
+        }
+        return null;
     }
 
     @Override
     public Declaration registerDeclaration(String id, Declaration decl) {
         return decls.get(currentLevel).put(id, decl);
+    }
+
+    @Override
+    public FilterableIdentificationTable filterTable(IdentificationFilter filter) {
+        return new FilteredIdTableView(filter, this);
     }
 }

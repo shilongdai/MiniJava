@@ -1,0 +1,79 @@
+class StaticClassMembers {
+
+    private static int test1;
+    private static int test2;
+    public static int test3;
+
+    private static void initStatic1() {
+        test1 = 0;
+        test2 = 2;
+        test3 = 3;
+        initStatic1();
+        initStatic2();
+    }
+
+    public static void initStatic2() {
+        StaticClassMembers.test1 = 0;
+        StaticClassMembers.test2 = 2;
+        StaticClassMembers.test3 = 3;
+
+        StaticClassMembers.initStatic1();
+        StaticClassMembers.initStatic2();
+    }
+
+    public void init() {
+        test1 = 0;
+        test2 = 2;
+        test3 = 3;
+        initStatic1();
+        initStatic2();
+    }
+
+    public void init2() {
+        this.test1 = 0;
+        this.test2 = 2;
+        this.test3 = 3;
+        this.initStatic1();
+        this.initStatic2();
+    }
+
+    public void init3() {
+        StaticClassMembers.test1 = 0;
+        StaticClassMembers.test2 = 2;
+        StaticClassMembers.test3 = 3;
+
+        StaticClassMembers.initStatic1();
+        StaticClassMembers.initStatic2();
+    }
+
+}
+
+class Main {
+
+    public void test1() {
+        StaticClassMembers s = null;
+        s.test3 = 3;
+
+        s.initStatic2();
+    }
+
+    public static void test2() {
+        StaticClassMembers s = null;
+        s.test3 = 3;
+
+        s.initStatic2();
+    }
+
+    public void test3() {
+        StaticClassMembers.test3 = 3;
+
+        StaticClassMembers.initStatic2();
+    }
+
+    public static void test4() {
+        StaticClassMembers.test3 = 3;
+
+        StaticClassMembers.initStatic2();
+    }
+
+}
