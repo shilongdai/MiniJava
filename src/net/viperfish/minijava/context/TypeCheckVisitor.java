@@ -74,7 +74,12 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
 
         TypeDenoter stmtType = null;
         for(Statement s : md.statementList) {
-            TypeDenoter t = VisitorUtils.visitCorrectStmt(this, returnType, s);
+            TypeDenoter t;
+            if(returnType.typeKind == TypeKind.VOID) {
+                t = VisitorUtils.visitCorrectStmt(this, null, s);
+            } else {
+                t = VisitorUtils.visitCorrectStmt(this, returnType, s);
+            }
             if(stmtType == null && t != null) {
                 stmtType = t;
             }
@@ -258,7 +263,8 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
             expectedBoolType(stmt.cond);
         }
 
-        return VisitorUtils.visitCorrectStmt(this, arg, stmt.body);
+        VisitorUtils.visitCorrectStmt(this, arg, stmt.body);
+        return null;
     }
 
     @Override

@@ -1,0 +1,20 @@
+class Test {
+
+    public static void main() {
+        int a = true;
+        boolean b = 1;
+        int aa = b;
+
+        int c = a + aa;
+
+        int bb = true + 1;
+        int d = true + false;
+        boolean f = true + 1;
+        boolean g = 1 + 1;
+
+        if(g == f) {
+
+        }
+    }
+
+}

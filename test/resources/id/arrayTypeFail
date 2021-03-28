@@ -1,0 +1,72 @@
+class Test {
+
+    public static void main1() {
+
+        int[] a = 3;
+        int[] b = null;
+//        int[] c = new boolean[3];
+        int[] d = new Test[1];
+        int[] e = new int[true];
+
+        a = 3;
+        b = null;
+//        c = new boolean[3];
+        d = new Test[1];
+        e = new int[true];
+
+        b[0] = 3;
+        b[0] = null;
+        b[0] = true;
+        b[0] = new Test();
+        b[0] = new int[3];
+
+        int finalT = b[0] + 1;
+    }
+/*
+    public static void main2() {
+
+        boolean[] a = 3;
+        boolean[] b = null;
+        boolean[] c = new boolean[3];
+        boolean[] d = new Test[1];
+        boolean[] e = new int[true];
+
+        a = 3;
+        b = null;
+        c = new boolean[3];
+        d = new Test[1];
+        e = new int[true];
+
+        b[0] = 3;
+        b[0] = null;
+        b[0] = true;
+        b[0] = new Test();
+        b[0] = new int[3];
+
+        boolean testB = b[0] && true;
+    }
+*/
+    public static void main3() {
+
+        Test[] a = 3;
+        Test[] b = null;
+//        Test[] c = new boolean[3];
+        Test[] d = new Test[1];
+        Test[] e = new int[true];
+
+        a = 3;
+        b = null;
+//        c = new boolean[3];
+        d = new Test[1];
+        e = new int[true];
+
+        b[0] = 3;
+        b[0] = null;
+        b[0] = true;
+        b[0] = new Test();
+        b[0] = new int[3];
+
+        Test obj = b[0];
+    }
+
+}

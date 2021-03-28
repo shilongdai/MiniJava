@@ -1,0 +1,57 @@
+class A {
+
+    public boolean test1() {
+        if(null == null) {
+            return 1;
+        } else {
+            return 0;
+        }
+        while(true) {
+            if(1 == 1) {
+                return 1;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    public int test2() {
+        if(true) {
+            if(true) {
+                while(true) {
+                    if(false) {
+                        return 1;
+                    }
+                }
+                if(false) {
+
+                } else {
+                    return 1;
+                }
+            }
+        }
+    }
+
+}
+
+class Main {
+
+    public void types(int a, boolean b, Main c, int[] ar, Main[] cr) {
+
+    }
+
+    public void main() {
+        int a = 1;
+        boolean b = false;
+        Main m = new Main();
+        int[] ar = new int[1];
+        Main[] cr = new Main[2];
+
+        types(a, b, m, ar, cr);
+        types(b, a, m, ar, cr);
+        types(a, b, a, ar, cr);
+        types(a, b, m, cr, ar);
+        types(b, a, cr, ar, m);
+    }
+
+}

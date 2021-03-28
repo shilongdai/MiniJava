@@ -1,0 +1,80 @@
+class A {
+
+    public int x;
+
+    public int getOne() {
+        return 1;
+    }
+
+}
+
+class B {
+
+    public boolean x;
+
+    public static int c;
+
+    public boolean getTrue() {
+        c = 1;
+        c = false;
+        return true;
+    }
+
+}
+
+
+class Main {
+
+    public void main() {
+        A a = new A();
+        B b = new B();
+        A failA = new B();
+        B failB = new A();
+
+        a = b;
+        b = a;
+
+        a.x = 1;
+        a.x = true;
+        a.x = b;
+
+        b.x = 1;
+        b.x = true;
+        b.x = b;
+
+        B.c = 1;
+        B.c = false;
+        B.c = a;
+
+        int t = a.getOne();
+        boolean w = b.getTrue();
+        t = b.getTrue();
+        w = a.getOne();
+
+        t = a.x;
+        w = b.x;
+
+        w = a.x;
+        t = b.x;
+    }
+
+}
+
+class D {
+    int x;
+    x c;
+
+    public void test(int p) {
+        int a = test;
+        boolean b = test;
+
+        int d = a + test;
+        c = 1;
+
+        p pp = null;
+        pp = new p();
+        if(pp == null) {
+
+        }
+    }
+}

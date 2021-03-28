@@ -27,7 +27,10 @@ abstract public class TypeDenoter extends AST {
         if(that.typeKind == TypeKind.ERROR || this.typeKind == TypeKind.ERROR) {
             return true;
         }
-        if(that.typeKind == TypeKind.NULL || this.typeKind == TypeKind.NULL) {
+        if(that.typeKind == TypeKind.NULL && (this.typeKind == TypeKind.CLASS || this.typeKind == TypeKind.ARRAY)) {
+            return true;
+        }
+        if(this.typeKind == TypeKind.NULL && (that.typeKind == TypeKind.CLASS || that.typeKind == TypeKind.ARRAY)) {
             return true;
         }
         if(that.typeKind == TypeKind.UNSUPPORTED || this.typeKind == TypeKind.UNSUPPORTED) {
