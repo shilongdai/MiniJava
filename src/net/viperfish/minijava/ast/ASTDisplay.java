@@ -22,6 +22,7 @@ package net.viperfish.minijava.ast;
 public class ASTDisplay implements Visitor<String, Object> {
 
     public static boolean showPosition = true;
+    public static boolean showDeclared = false;
 
     /**
      * print text representation of AST to stdout
@@ -354,7 +355,15 @@ public class ASTDisplay implements Visitor<String, Object> {
     ///////////////////////////////////////////////////////////////////////////////
 
     public Object visitIdentifier(Identifier id, String arg) {
-        show(arg, quote(id.spelling) + " " + id.toString() + " Declared: " + id.dominantDecl.posn.getLineNumber());
+        int declaredPosn = -1;
+        if(id.dominantDecl != null) {
+            declaredPosn = id.dominantDecl.posn.getLineNumber();
+        }
+        if(showDeclared) {
+            show(arg, quote(id.spelling) + " " + id.toString() + " Declared: " + declaredPosn);
+        } else {
+            show(arg, quote(id.spelling) + " " + id.toString());
+        }
         return null;
     }
 
