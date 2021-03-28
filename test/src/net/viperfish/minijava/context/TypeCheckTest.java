@@ -1,6 +1,5 @@
-package net.viperfish.minijava.ident;
+package net.viperfish.minijava.context;
 
-import net.viperfish.minijava.ast.ASTDisplay;
 import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.parser.GrammarException;
 import net.viperfish.minijava.parser.MiniJavaEBNFGrammarParser;
@@ -14,13 +13,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 
-public class IdentificationTest {
+public class TypeCheckTest {
 
-    private static String[] ID_SUCCESS = new String[] {"basicId", "complexId", "scopeRuleSuccess", "staticSuccess"};
+    private static String[] Type_SUCCESS = new String[] {"basicId", "complexId", "scopeRuleSuccess", "staticSuccess"};
 
     @Test
-    public void testIdentificationSuccess() throws IOException, ParsingException, GrammarException {
-        for (String resources : ID_SUCCESS) {
+    public void testTypeCheckSuccess() throws IOException, ParsingException, GrammarException {
+        for (String resources : Type_SUCCESS) {
             System.out.println("\n\nTesting: " + resources);
             try (FileInputStream inputStream = new FileInputStream(Paths.get("resources", "id",  resources).toFile())) {
                 TokenScanner scanner = new TokenScanner(inputStream);
@@ -28,9 +27,9 @@ public class IdentificationTest {
                 ContextAnalyzer analyzer = new ContextAnalyzer();
                 parser.init();
                 Package ast = parser.parse();
-                ast = analyzer.analyze(ast);
-                new ASTDisplay().showTree(ast);
-            } catch (IdentificationErrorException e) {
+                ast = analyzer.identification(ast);
+                ast = analyzer.typeChecking(ast);
+            } catch (ContextAnalysisErrorException e) {
                 for(ContextualErrors errors : e.getErrors()) {
                     System.out.println(String.format("*** line %d: %s", errors.getPosition().getLineNumber(), errors.getMsg()));
                 }

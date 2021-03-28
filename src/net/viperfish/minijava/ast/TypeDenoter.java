@@ -17,6 +17,31 @@ abstract public class TypeDenoter extends AST {
         typeKind = type;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof TypeDenoter)) return false;
+
+        TypeDenoter that = (TypeDenoter) o;
+
+        if(that.typeKind == TypeKind.ERROR || this.typeKind == TypeKind.ERROR) {
+            return true;
+        }
+        if(that.typeKind == TypeKind.NULL || this.typeKind == TypeKind.NULL) {
+            return true;
+        }
+        if(that.typeKind == TypeKind.UNSUPPORTED || this.typeKind == TypeKind.UNSUPPORTED) {
+            return false;
+        }
+        if(that.typeKind == TypeKind.META || this.typeKind == TypeKind.META) {
+            return false;
+        }
+        if(that.typeKind == TypeKind.VOID || this.typeKind == TypeKind.VOID) {
+            return false;
+        }
+        return typeKind == that.typeKind;
+    }
+
 }
 
         

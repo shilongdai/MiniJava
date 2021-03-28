@@ -1,13 +1,13 @@
-package net.viperfish.minijava.ident;
+package net.viperfish.minijava.context;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class IdentificationErrorException extends Exception {
+public class ContextAnalysisErrorException extends Exception {
 
     private List<ContextualErrors> errors;
 
-    public IdentificationErrorException(List<ContextualErrors> errors) {
+    public ContextAnalysisErrorException(List<ContextualErrors> errors) {
         super("Identification error occurred");
         this.errors = new ArrayList<>(errors);
     }

@@ -10,6 +10,8 @@ import net.viperfish.minijava.scanner.SourcePosition;
 
 public abstract class Expression extends AST {
 
+    public TypeDenoter dominantType;
+
     public Expression(SourcePosition posn) {
         super(posn);
     }

@@ -10,7 +10,7 @@ class TestScope {
                     while(main <= 3) {
                         int c = TestScope;
                         c = main + a;
-                        main();
+                        main = 0;
                     }
                 }
             }

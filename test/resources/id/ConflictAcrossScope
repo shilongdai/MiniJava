@@ -1,0 +1,9 @@
+class Test {
+
+    public static void main(int test) {
+
+        int test = 2;
+
+    }
+
+}

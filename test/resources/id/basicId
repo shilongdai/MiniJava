@@ -3,8 +3,8 @@ class HelloWorld {
     public static void main(int[] argv, int argc) {
         int h = 0; int e = 0; int l = 0;
         int[] space = new int[1];
-        boolean w = 21; boolean o = 21; boolean r = 21; boolean d = 21;
-        argv[0] = !true;
+        boolean w = true; boolean o = true; boolean r = true; boolean d = true;
+        argv[0] = 3;
     }
 
 }

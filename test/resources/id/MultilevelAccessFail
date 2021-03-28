@@ -1,0 +1,18 @@
+class A {
+    private int x;
+}
+
+class B {
+    public A a;
+}
+
+class C {
+
+    private static B b;
+
+    public void main() {
+        C c = new C();
+        int x = c.b.a.x;
+    }
+
+}

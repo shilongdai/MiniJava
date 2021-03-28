@@ -1,0 +1,8 @@
+class Test {
+
+    private int x;
+
+    public static void main() {
+        this.x = 1;
+    }
+}

@@ -12,6 +12,8 @@ public abstract class Reference extends AST {
 
     public Declaration dominantDecl;
 
+    public TypeDenoter dominantType;
+
     public Reference(SourcePosition posn) {
         super(posn);
     }

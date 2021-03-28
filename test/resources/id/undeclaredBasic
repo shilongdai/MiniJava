@@ -1,0 +1,7 @@
+class TestUndeclared {
+
+    public static void main() {
+        int x = test + 1;
+    }
+
+}

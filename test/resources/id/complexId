@@ -15,11 +15,12 @@ class Vector {
         }
     }
 
-    public void set(int index, int val) {
+    public int set(int index, int val) {
         if(index >= length()) {
             return -1;
         } else {
             this.elements[index] = val;
+            return val;
         }
     }
 
@@ -56,6 +57,10 @@ class Vector {
 }
 
 class Main {
+
+    private Vector test;
+    private Main m;
+
     public static int main() {
         Vector r10 = new Vector();
         r10.initVector(10);
@@ -71,5 +76,9 @@ class Main {
         r2.set(0, 1);
         r2.set(1, 0);
         r10.dotProduct(r2);
+
+        Main main = new Main();
+        int y = main.m.m.m.test.length();
+        return 0;
     }
 }

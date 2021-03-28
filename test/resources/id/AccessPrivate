@@ -1,0 +1,14 @@
+class Test1 {
+
+    private int x;
+
+}
+
+class Test2 {
+
+    public void main() {
+        Test1 test = new Test1();
+        int y = test.x + 1;
+    }
+
+}

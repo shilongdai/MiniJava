@@ -1,0 +1,6 @@
+class Test {
+
+    private int test;
+    private void test() {}
+
+}

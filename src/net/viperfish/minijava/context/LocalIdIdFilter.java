@@ -1,4 +1,4 @@
-package net.viperfish.minijava.ident;
+package net.viperfish.minijava.context;
 
 import net.viperfish.minijava.ast.ClassDecl;
 import net.viperfish.minijava.ast.FieldDecl;

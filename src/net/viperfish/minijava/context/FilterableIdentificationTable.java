@@ -1,4 +1,4 @@
-package net.viperfish.minijava.ident;
+package net.viperfish.minijava.context;
 
 public interface FilterableIdentificationTable extends LeveledIdentificationTable {
 

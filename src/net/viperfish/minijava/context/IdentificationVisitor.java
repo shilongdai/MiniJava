@@ -1,4 +1,4 @@
-package net.viperfish.minijava.ident;
+package net.viperfish.minijava.context;
 
 import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.ast.*;
@@ -44,11 +44,13 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
 
     @Override
     public Object visitClassDecl(ClassDecl cd, FilterableIdentificationTable arg) {
+        visitCorrectType(cd.type, arg);
         arg.openScope();
         for (MemberDecl decl : cd.fieldDeclList) {
             Declaration conflict = checkCurrentConflict(decl.name, arg);
             if (conflict != null) {
                 duplicateError(decl, conflict);
+                return null;
             }
             arg.registerDeclaration(decl.name, decl);
         }
@@ -56,6 +58,7 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
             Declaration conflict = checkCurrentConflict(decl.name, arg);
             if (conflict != null) {
                 duplicateError(decl, conflict);
+                return null;
             }
             arg.registerDeclaration(decl.name, decl);
         }
@@ -104,6 +107,7 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         Declaration conflict = checkCurrentConflict(pd.name, arg);
         if (conflict != null) {
             duplicateError(pd, conflict);
+            return null;
         }
         arg.registerDeclaration(pd.name, pd);
         return null;
@@ -115,6 +119,7 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         Declaration conflict = checkConflictLeveled(decl.name, MAX_LEVEL_OVERRIDE, arg);
         if (conflict != null) {
             duplicateError(decl, conflict);
+            return null;
         }
         arg.registerDeclaration(decl.name, decl);
         return null;
@@ -189,13 +194,16 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
 
     @Override
     public Object visitIfStmt(IfStmt stmt, FilterableIdentificationTable arg) {
+        this.visitCorrectExp(stmt.cond, arg);
         if (checkIfSoleDecl(stmt.thenStmt)) {
             soleDeclareError(stmt.thenStmt);
+            return null;
         }
         if (checkIfSoleDecl(stmt.elseStmt)) {
             soleDeclareError(stmt.elseStmt);
+            return null;
         }
-        this.visitCorrectExp(stmt.cond, arg);
+
         this.visitCorrectStmt(stmt.thenStmt, arg);
         if (stmt.elseStmt != null) {
             this.visitCorrectStmt(stmt.elseStmt, arg);
@@ -205,10 +213,11 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
 
     @Override
     public Object visitWhileStmt(WhileStmt stmt, FilterableIdentificationTable arg) {
+        this.visitCorrectExp(stmt.cond, arg);
         if (checkIfSoleDecl(stmt.body)) {
             soleDeclareError(stmt.body);
+            return null;
         }
-        this.visitCorrectExp(stmt.cond, arg);
         this.visitCorrectStmt(stmt.body, arg);
         return null;
     }
@@ -277,6 +286,9 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     @Override
     public Object visitThisRef(ThisRef ref, FilterableIdentificationTable arg) {
         ref.dominantDecl = arg.getDeclaration(THIS_FIELD);
+        if(ref.dominantDecl == null) {
+            this.undefinedSymbolError(new Identifier(new Token(TokenType.THIS, "this", ref.posn)));
+        }
         return null;
     }
 
@@ -312,8 +324,6 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
             table.registerDeclaration(ref.id.spelling, target);
             this.visitIdentifier(ref.id, table);
             ref.dominantDecl = ref.id.dominantDecl;
-        } else {
-            undefinedSymbolError(ref.id);
         }
         return null;
     }
@@ -389,110 +399,23 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     }
 
     private Object visitCorrectType(TypeDenoter type, FilterableIdentificationTable arg) {
-        if (type instanceof ClassType) {
-            return this.visitClassType((ClassType) type, arg);
-        }
-        if (type instanceof ArrayType) {
-            return this.visitArrayType((ArrayType) type, arg);
-        }
-        if (type instanceof BaseType) {
-            return this.visitBaseType((BaseType) type, arg);
-        }
-        return null;
+        return VisitorUtils.visitCorrectType(this, arg, type);
     }
 
     private Object visitCorrectStmt(Statement stmt, FilterableIdentificationTable arg) {
-        if (stmt instanceof IxAssignStmt) {
-            return this.visitIxAssignStmt((IxAssignStmt) stmt, arg);
-        }
-        if (stmt instanceof BlockStmt) {
-            return this.visitBlockStmt((BlockStmt) stmt, arg);
-        }
-        if (stmt instanceof IfStmt) {
-            return this.visitIfStmt((IfStmt) stmt, arg);
-        }
-        if (stmt instanceof CallStmt) {
-            return this.visitCallStmt((CallStmt) stmt, arg);
-        }
-        if (stmt instanceof AssignStmt) {
-            return this.visitAssignStmt((AssignStmt) stmt, arg);
-        }
-        if (stmt instanceof VarDeclStmt) {
-            return this.visitVardeclStmt((VarDeclStmt) stmt, arg);
-        }
-        if (stmt instanceof ReturnStmt) {
-            return this.visitReturnStmt((ReturnStmt) stmt, arg);
-        }
-        if (stmt instanceof WhileStmt) {
-            return this.visitWhileStmt((WhileStmt) stmt, arg);
-        }
-        return null;
+        return VisitorUtils.visitCorrectStmt(this, arg, stmt);
     }
 
     private Object visitCorrectExp(Expression exp, FilterableIdentificationTable arg) {
-        if (exp instanceof NullExpr) {
-            return this.visitNullExpr((NullExpr) exp, arg);
-        }
-        if (exp instanceof NewArrayExpr) {
-            return this.visitNewArrayExpr((NewArrayExpr) exp, arg);
-        }
-        if (exp instanceof NewObjectExpr) {
-            return this.visitNewObjectExpr((NewObjectExpr) exp, arg);
-        }
-        if (exp instanceof IxExpr) {
-            return this.visitIxExpr((IxExpr) exp, arg);
-        }
-        if (exp instanceof UnaryExpr) {
-            return this.visitUnaryExpr((UnaryExpr) exp, arg);
-        }
-        if (exp instanceof BinaryExpr) {
-            return this.visitBinaryExpr((BinaryExpr) exp, arg);
-        }
-        if (exp instanceof RefExpr) {
-            return this.visitRefExpr((RefExpr) exp, arg);
-        }
-        if (exp instanceof LiteralExpr) {
-            return this.visitLiteralExpr((LiteralExpr) exp, arg);
-        }
-        if (exp instanceof CallExpr) {
-            return this.visitCallExpr((CallExpr) exp, arg);
-        }
-        return null;
+        return VisitorUtils.visitCorrectExp(this, arg, exp);
     }
 
     private Object visitCorrectRef(Reference ref, FilterableIdentificationTable arg) {
-        if (ref instanceof QualRef) {
-            return this.visitQRef((QualRef) ref, arg);
-        }
-        if (ref instanceof ThisRef) {
-            return this.visitThisRef((ThisRef) ref, arg);
-        }
-        if (ref instanceof IdRef) {
-            return this.visitIdRef((IdRef) ref, arg);
-        }
-        return null;
+        return VisitorUtils.visitCorrectRef(this, arg, ref);
     }
 
     private Object visitCorrectTerminal(Terminal terminal, FilterableIdentificationTable arg) {
-        if (terminal instanceof NullLiteral) {
-            return this.visitNullLiteral((NullLiteral) terminal, arg);
-        }
-        if (terminal instanceof BooleanLiteral) {
-            return this.visitBooleanLiteral((BooleanLiteral) terminal, arg);
-        }
-        if (terminal instanceof Identifier) {
-            throw new IllegalArgumentException("Identifier should be treated separately");
-        }
-        if (terminal instanceof ReturnTerminal) {
-            return null;
-        }
-        if (terminal instanceof IntLiteral) {
-            return this.visitIntLiteral((IntLiteral) terminal, arg);
-        }
-        if (terminal instanceof Operator) {
-            return this.visitOperator((Operator) terminal, arg);
-        }
-        return null;
+        return VisitorUtils.visitCorrectTerminal(this, arg, terminal);
     }
 
     private boolean checkIfSoleDecl(Statement stmt) {
