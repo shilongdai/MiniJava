@@ -1,0 +1,21 @@
+class Test {
+
+    public String test1() {
+        return new String();
+    }
+
+    public void test2() {
+        String test = null;
+        test2 = new String();
+
+    }
+
+    public void test3(String[] t) {
+        t[0] = new String();
+    }
+
+    public void test4() {
+        System.out.println(true);
+    }
+
+}

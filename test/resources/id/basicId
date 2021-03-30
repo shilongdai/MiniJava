@@ -5,6 +5,7 @@ class HelloWorld {
         int[] space = new int[1];
         boolean w = true; boolean o = true; boolean r = true; boolean d = true;
         argv[0] = 3;
+        System.out.println(h);
     }
 
 }

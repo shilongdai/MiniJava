@@ -117,6 +117,9 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
     @Override
     public TypeDenoter visitClassType(ClassType type, Object arg) {
         TypeDenoter idType = this.visitIdentifier(type.className, arg);
+        if(idType.typeKind == TypeKind.UNSUPPORTED) {
+            return idType;
+        }
         if(idType.typeKind != TypeKind.META) {
             expectedActualType(type);
             return new BaseType(TypeKind.ERROR, type.posn);
@@ -428,6 +431,9 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
     @Override
     public TypeDenoter visitIdentifier(Identifier id, Object arg) {
         Declaration dec = id.dominantDecl;
+        if(dec.name.equals("String")) {
+            return new BaseType(TypeKind.UNSUPPORTED, id.posn);
+        }
         if(dec instanceof ClassDecl) {
             return new BaseType(TypeKind.META, id.posn);
         }

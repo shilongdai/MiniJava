@@ -1,5 +1,6 @@
 package net.viperfish.minijava.context;
 
+import net.viperfish.minijava.Compiler;
 import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.parser.GrammarException;
 import net.viperfish.minijava.parser.MiniJavaEBNFGrammarParser;
@@ -16,7 +17,7 @@ import java.util.*;
 
 public class TypeCheckTest {
 
-    private static String[] Type_SUCCESS = new String[] {"basicId", "complexId", "scopeRuleSuccess", "staticSuccess"};
+    private static String[] Type_SUCCESS = new String[] {"idBuiltin", "basicId", "complexId", "scopeRuleSuccess", "staticSuccess"};
 
     private static Map<String, Set<Integer>> TYPE_FAILS;
 
@@ -26,6 +27,7 @@ public class TypeCheckTest {
         TYPE_FAILS.put("objTypeFails", new HashSet<>(Arrays.asList(19, 31, 32, 34, 35, 38, 39, 41, 43, 46, 47, 51, 52, 57, 58, 65, 68, 69, 71, 74, 75)));
         TYPE_FAILS.put("arrayTypeFail", new HashSet<>(Arrays.asList(5, 8, 9, 11, 14, 15, 18, 19, 20, 21, 51, 55, 57, 61, 63, 65, 67)));
         TYPE_FAILS.put("functionSignatureFails", new HashSet<>(Arrays.asList(5, 7, 11, 18, 51, 52, 53, 54)));
+        TYPE_FAILS.put("failBuiltIn", new HashSet<>(Arrays.asList(4, 8, 9, 14, 18)));
     }
 
     @Test
@@ -38,6 +40,7 @@ public class TypeCheckTest {
                 ContextAnalyzer analyzer = new ContextAnalyzer();
                 parser.init();
                 Package ast = parser.parse();
+                Compiler.addPredefinedClasses(ast);
                 ast = analyzer.identification(ast);
                 ast = analyzer.typeChecking(ast);
             } catch (ContextAnalysisErrorException e) {
@@ -59,6 +62,7 @@ public class TypeCheckTest {
                 ContextAnalyzer analyzer = new ContextAnalyzer();
                 parser.init();
                 Package ast = parser.parse();
+                Compiler.addPredefinedClasses(ast);
                 ast = analyzer.identification(ast);
                 ast = analyzer.typeChecking(ast);
                 Assertions.fail("Failed to detect issue");

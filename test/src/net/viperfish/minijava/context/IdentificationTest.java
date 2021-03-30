@@ -1,5 +1,6 @@
 package net.viperfish.minijava.context;
 
+import net.viperfish.minijava.Compiler;
 import net.viperfish.minijava.ast.ASTDisplay;
 import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.parser.GrammarException;
@@ -18,7 +19,7 @@ import java.util.Map;
 
 public class IdentificationTest {
 
-    private static String[] ID_SUCCESS = new String[] {"basicId", "complexId", "scopeRuleSuccess", "staticSuccess"};
+    private static String[] ID_SUCCESS = new String[] {"idBuiltin", "basicId", "complexId", "scopeRuleSuccess", "staticSuccess"};
     private static Map<String, Integer> ID_FAILS;
 
     static {
@@ -43,6 +44,7 @@ public class IdentificationTest {
                 ContextAnalyzer analyzer = new ContextAnalyzer();
                 parser.init();
                 Package ast = parser.parse();
+                Compiler.addPredefinedClasses(ast);
                 ast = analyzer.identification(ast);
                 new ASTDisplay().showTree(ast);
             } catch (ContextAnalysisErrorException e) {

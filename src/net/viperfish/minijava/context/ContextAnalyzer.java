@@ -23,4 +23,10 @@ public class ContextAnalyzer {
         return program;
     }
 
+    public Package analyze(Package program) throws ContextAnalysisErrorException {
+        program = identification(program);
+        program = typeChecking(program);
+        return program;
+    }
+
 }

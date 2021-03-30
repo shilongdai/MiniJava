@@ -31,6 +31,11 @@ public class ArrayType extends TypeDenoter {
         if (!super.equals(o)) return false;
 
         TypeDenoter baseType = (TypeDenoter) o;
+
+        if(baseType.typeKind == TypeKind.UNSUPPORTED) {
+            return false;
+        }
+
         if(baseType.typeKind == TypeKind.ERROR) {
             return true;
         }

@@ -24,24 +24,28 @@ abstract public class TypeDenoter extends AST {
 
         TypeDenoter that = (TypeDenoter) o;
 
-        if(that.typeKind == TypeKind.ERROR || this.typeKind == TypeKind.ERROR) {
-            return true;
-        }
-        if(that.typeKind == TypeKind.NULL && (this.typeKind == TypeKind.CLASS || this.typeKind == TypeKind.ARRAY)) {
-            return true;
-        }
-        if(this.typeKind == TypeKind.NULL && (that.typeKind == TypeKind.CLASS || that.typeKind == TypeKind.ARRAY)) {
-            return true;
-        }
         if(that.typeKind == TypeKind.UNSUPPORTED || this.typeKind == TypeKind.UNSUPPORTED) {
             return false;
         }
+
+        if(that.typeKind == TypeKind.ERROR || this.typeKind == TypeKind.ERROR) {
+            return true;
+        }
+
         if(that.typeKind == TypeKind.META || this.typeKind == TypeKind.META) {
             return false;
         }
         if(that.typeKind == TypeKind.VOID || this.typeKind == TypeKind.VOID) {
             return false;
         }
+
+        if(that.typeKind == TypeKind.NULL && (this.typeKind == TypeKind.CLASS || this.typeKind == TypeKind.ARRAY)) {
+            return true;
+        }
+        if(this.typeKind == TypeKind.NULL && (that.typeKind == TypeKind.CLASS || that.typeKind == TypeKind.ARRAY)) {
+            return true;
+        }
+
         return typeKind == that.typeKind;
     }
 

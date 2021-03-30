@@ -21,6 +21,10 @@ public class ClassDeclList implements Iterable<ClassDecl> {
         classDeclList.add(cd);
     }
 
+    public void add(ClassDecl cd, int idx) {
+        classDeclList.add(idx, cd);
+    }
+
     public ClassDecl get(int i) {
         return classDeclList.get(i);
     }

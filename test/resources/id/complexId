@@ -1,3 +1,31 @@
+class Main {
+
+    private Vector test;
+    private Main m;
+
+    public static int main(String s) {
+        Vector r10 = new Vector();
+        r10.initVector(10);
+        int i = 0;
+        while(i < 10) {
+            r10.set(i, i);
+            i = i + 1;
+        }
+
+        Vector r2 = new Vector();
+        r2.initVector(2);
+        i = 0;
+        r2.set(0, 1);
+        r2.set(1, 0);
+        r10.dotProduct(r2);
+
+        Main main = new Main();
+        int y = main.m.m.m.test.length();
+        System.out.println(y);
+        return 0;
+    }
+}
+
 class Vector {
     private int[] elements;
     private int vectorLength;
@@ -53,32 +81,5 @@ class Vector {
             }
         }
         return true;
-    }
-}
-
-class Main {
-
-    private Vector test;
-    private Main m;
-
-    public static int main() {
-        Vector r10 = new Vector();
-        r10.initVector(10);
-        int i = 0;
-        while(i < 10) {
-            r10.set(i, i);
-            i = i + 1;
-        }
-
-        Vector r2 = new Vector();
-        r2.initVector(2);
-        i = 0;
-        r2.set(0, 1);
-        r2.set(1, 0);
-        r10.dotProduct(r2);
-
-        Main main = new Main();
-        int y = main.m.m.m.test.length();
-        return 0;
     }
 }
