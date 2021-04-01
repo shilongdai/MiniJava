@@ -27,7 +27,7 @@ public class TypeCheckTest {
         TYPE_FAILS.put("objTypeFails", new HashSet<>(Arrays.asList(19, 31, 32, 34, 35, 38, 39, 41, 43, 46, 47, 51, 52, 57, 58, 65, 68, 69, 71, 74, 75)));
         TYPE_FAILS.put("arrayTypeFail", new HashSet<>(Arrays.asList(5, 8, 9, 11, 14, 15, 18, 19, 20, 21, 51, 55, 57, 61, 63, 65, 67)));
         TYPE_FAILS.put("functionSignatureFails", new HashSet<>(Arrays.asList(5, 7, 11, 18, 51, 52, 53, 54)));
-        TYPE_FAILS.put("failBuiltIn", new HashSet<>(Arrays.asList(4, 8, 9, 14, 18)));
+        TYPE_FAILS.put("failBuiltIn", new HashSet<>(Arrays.asList(4, 8, 9, 14, 15, 19)));
     }
 
     @Test

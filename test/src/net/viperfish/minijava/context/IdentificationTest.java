@@ -32,6 +32,7 @@ public class IdentificationTest {
         ID_FAILS.put("AccessStatic", 6);
         ID_FAILS.put("StaticThis", 6);
         ID_FAILS.put("MultilevelAccessFail", 15);
+        ID_FAILS.put("commentLineNum", 3);
     }
 
     @Test

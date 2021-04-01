@@ -22,6 +22,9 @@ class Main {
         Main main = new Main();
         int y = main.m.m.m.test.length();
         System.out.println(y);
+        if(null == null || null != null) {
+            System.out.println(1);
+        }
         return 0;
     }
 }

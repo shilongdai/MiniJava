@@ -12,6 +12,7 @@ class Test {
 
     public void test3(String[] t) {
         t[0] = new String();
+        String s = t[0];
     }
 
     public void test4() {

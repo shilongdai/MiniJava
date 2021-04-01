@@ -175,7 +175,7 @@ public class TokenScanner {
             next = inputStream.read();
             position += 1;
         }
-        if(next == '\n' || next == '\r') {
+        if(next == '\n') {
             lineNumber += 1;
         }
         return position;
@@ -188,7 +188,7 @@ public class TokenScanner {
         if (next == -1) {
             return -1;
         }
-        if(next == '\n' || next == '\r') {
+        if(next == '\n') {
             lineNumber += 1;
         }
         slider.append((char) next);
