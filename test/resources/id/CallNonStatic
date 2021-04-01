@@ -1,0 +1,15 @@
+class Matrix {
+
+    public void init() {
+
+    }
+
+}
+
+class Test {
+
+    public static void main() {
+        Matrix.init();
+    }
+
+}

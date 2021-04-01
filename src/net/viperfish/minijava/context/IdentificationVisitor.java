@@ -428,15 +428,17 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     private boolean accessible(MemberDecl d, Reference srcRef,  ClassDecl declClass, LeveledIdentificationTable arg) {
         ClassDecl currentClass = (ClassDecl) arg.getDeclaration(CURRENT_CLASS);
 
+        boolean pass = true;
+
         if (!currentClass.name.equals(declClass.name)) {
-            return !d.isPrivate;
+            pass = !d.isPrivate;
         }
 
         if(srcRef.dominantDecl instanceof ClassDecl) {
-            return d.isStatic;
+            pass = pass && d.isStatic;
         }
 
-        return true;
+        return pass;
     }
 
     private ClassDecl getOriginalClass(Declaration dec) {
