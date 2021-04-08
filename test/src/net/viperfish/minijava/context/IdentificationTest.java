@@ -68,6 +68,7 @@ public class IdentificationTest {
                 ContextAnalyzer analyzer = new ContextAnalyzer();
                 parser.init();
                 Package ast = parser.parse();
+                Compiler.addPredefinedClasses(ast);
                 ast = analyzer.identification(ast);
                 Assertions.fail("Did not detect failure in: " + resources);
             } catch (ContextAnalysisErrorException e) {

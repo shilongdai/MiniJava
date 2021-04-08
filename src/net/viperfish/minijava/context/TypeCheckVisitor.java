@@ -431,7 +431,7 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
     @Override
     public TypeDenoter visitIdentifier(Identifier id, Object arg) {
         Declaration dec = id.dominantDecl;
-        if(dec.name.equals("String")) {
+        if(dec instanceof ClassDecl && dec.name.equals("String")) {
             return new BaseType(TypeKind.UNSUPPORTED, id.posn);
         }
         if(dec instanceof ClassDecl) {

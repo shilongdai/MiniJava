@@ -5,8 +5,7 @@ import net.viperfish.minijava.ast.*;
 import net.viperfish.minijava.scanner.Token;
 import net.viperfish.minijava.scanner.TokenType;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class IdentificationVisitor implements Visitor<FilterableIdentificationTable, Object> {
 
@@ -33,6 +32,11 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
                 duplicateError(c, conflict);
             }
             arg.registerDeclaration(c.name, c);
+        }
+        for(ClassDecl c : prog.classDeclList) {
+            for(FieldDecl fieldDecl : c.fieldDeclList) {
+                this.visitFieldDecl(fieldDecl, arg);
+            }
         }
 
         for (ClassDecl c : prog.classDeclList) {
@@ -65,9 +69,6 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         arg.registerDeclaration(THIS_FIELD, generateThis(cd));
         arg.registerDeclaration(CURRENT_CLASS, cd);
 
-        for (FieldDecl decl : cd.fieldDeclList) {
-            this.visitFieldDecl(decl, arg);
-        }
         for (MethodDecl decl : cd.methodDeclList) {
             this.visitMethodDecl(decl, arg);
         }
@@ -132,6 +133,7 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
 
     @Override
     public Object visitClassType(ClassType type, FilterableIdentificationTable arg) {
+        arg = arg.filterTable(new ClassTypeIdFilter());
         this.visitIdentifier(type.className, arg);
         return null;
     }
@@ -154,9 +156,12 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
 
     @Override
     public Object visitVardeclStmt(VarDeclStmt stmt, FilterableIdentificationTable arg) {
-        this.visitCorrectExp(stmt.initExp, arg);
         // ensures that can't use the declaration in the initExp
         this.visitVarDecl(stmt.varDecl, arg);
+        Collection<Declaration> decls = this.visitCorrectExp(stmt.initExp, arg);
+        if(decls.contains(stmt.varDecl)) {
+            referenceDeclaringVariable(stmt.varDecl);
+        }
         return null;
     }
 
@@ -225,62 +230,69 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     @Override
     public Object visitUnaryExpr(UnaryExpr expr, FilterableIdentificationTable arg) {
         this.visitOperator(expr.operator, arg);
-        this.visitCorrectExp(expr.expr, arg);
-        return null;
+        return this.visitCorrectExp(expr.expr, arg);
     }
 
     @Override
     public Object visitBinaryExpr(BinaryExpr expr, FilterableIdentificationTable arg) {
-        this.visitCorrectExp(expr.left, arg);
+        Collection<Declaration> declarations = this.visitCorrectExp(expr.left, arg);
         this.visitOperator(expr.operator, arg);
-        this.visitCorrectExp(expr.right, arg);
-        return null;
+        declarations.addAll(this.visitCorrectExp(expr.right, arg));
+        return declarations;
     }
 
     @Override
     public Object visitRefExpr(RefExpr expr, FilterableIdentificationTable arg) {
         this.visitCorrectRef(expr.ref, arg);
-        return null;
+        if(expr.ref.dominantDecl != null) {
+            return new HashSet<>(Collections.singletonList(expr.ref.dominantDecl));
+        } else {
+            return new HashSet<>();
+        }
     }
 
     @Override
     public Object visitIxExpr(IxExpr expr, FilterableIdentificationTable arg) {
-        this.visitCorrectExp(expr.ixExpr, arg);
+        Collection<Declaration> collection = this.visitCorrectExp(expr.ixExpr, arg);
         this.visitCorrectRef(expr.ref, arg);
-        return null;
+        if(expr.ref.dominantDecl != null) {
+            collection.add(expr.ref.dominantDecl);
+        }
+        return collection;
     }
 
     @Override
     public Object visitCallExpr(CallExpr expr, FilterableIdentificationTable arg) {
+        Set<Declaration> referencedDecl = new HashSet<>();
+
         this.visitCorrectRef(expr.functionRef, arg);
         for (Expression exp : expr.argList) {
-            this.visitCorrectExp(exp, arg);
+            referencedDecl.addAll(this.visitCorrectExp(exp, arg));
         }
-        return null;
+        return referencedDecl;
     }
 
     @Override
-    public Object visitLiteralExpr(LiteralExpr expr, FilterableIdentificationTable arg) {
+    public Collection<Declaration> visitLiteralExpr(LiteralExpr expr, FilterableIdentificationTable arg) {
         this.visitCorrectTerminal(expr.lit, arg);
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
     public Object visitNewObjectExpr(NewObjectExpr expr, FilterableIdentificationTable arg) {
         this.visitCorrectType(expr.classtype, arg);
-        return null;
+        return new HashSet<>();
     }
 
     @Override
     public Object visitNewArrayExpr(NewArrayExpr expr, FilterableIdentificationTable arg) {
         this.visitCorrectType(expr.eltType, arg);
-        this.visitCorrectExp(expr.sizeExpr, arg);
-        return null;
+        return this.visitCorrectExp(expr.sizeExpr, arg);
     }
 
     @Override
     public Object visitNullExpr(NullExpr expr, FilterableIdentificationTable arg) {
-        return null;
+        return new HashSet<>();
     }
 
     @Override
@@ -324,6 +336,8 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
             table.registerDeclaration(ref.id.spelling, target);
             this.visitIdentifier(ref.id, table);
             ref.dominantDecl = ref.id.dominantDecl;
+        } else {
+            notQualifiedError(ref.ref);
         }
         return null;
     }
@@ -359,7 +373,12 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     }
 
     private void duplicateError(Declaration newDec, Declaration duplicate) {
-        String msg = String.format("Duplicate declaration. Attempting to declare %s, but %s already declared at line %d", newDec.name, newDec.name, duplicate.posn.getLineNumber());
+        String msg = null;
+        if(duplicate.posn != null) {
+            msg = String.format("Duplicate declaration. Attempting to declare %s, but %s already declared at line %d", newDec.name, newDec.name, duplicate.posn.getLineNumber());
+        } else {
+            msg = String.format("Duplicate declaration. Attempting to declare %s, but %s already declared at as built-in", newDec.name, newDec.name);
+        }
         ContextualErrors error = new ContextualErrors(newDec.posn, msg);
         this.errors.add(error);
     }
@@ -370,6 +389,14 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
 
     private void undefinedSymbolError(Identifier id) {
         this.errors.add(new ContextualErrors(id.posn, String.format("Unknown symbol %s", id.spelling)));
+    }
+
+    private void notQualifiedError(Reference ref) {
+        this.errors.add(new ContextualErrors(ref.posn, "not a qualified reference"));
+    }
+
+    private void referenceDeclaringVariable(VarDecl decl) {
+        this.errors.add(new ContextualErrors(decl.posn, "Cannot reference the variable currently being declared"));
     }
 
     private Declaration checkCurrentConflict(String id, FilterableIdentificationTable table) {
@@ -406,8 +433,8 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         return VisitorUtils.visitCorrectStmt(this, arg, stmt);
     }
 
-    private Object visitCorrectExp(Expression exp, FilterableIdentificationTable arg) {
-        return VisitorUtils.visitCorrectExp(this, arg, exp);
+    private Collection<Declaration> visitCorrectExp(Expression exp, FilterableIdentificationTable arg) {
+        return (Collection<Declaration>) VisitorUtils.visitCorrectExp(this, arg, exp);
     }
 
     private Object visitCorrectRef(Reference ref, FilterableIdentificationTable arg) {

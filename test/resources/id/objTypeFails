@@ -59,22 +59,3 @@ class Main {
     }
 
 }
-
-class D {
-    int x;
-    x c;
-
-    public void test(int p) {
-        int a = test;
-        boolean b = test;
-
-        int d = a + test;
-        c = 1;
-
-        p pp = null;
-        pp = new p();
-        if(pp == null) {
-
-        }
-    }
-}
