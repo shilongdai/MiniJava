@@ -225,7 +225,7 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
             }
         } else {
             if(arg == null) {
-                return null;
+                return new BaseType(TypeKind.VOID, stmt.posn);
             } else {
                 missingReturnType(stmt.posn);
                 return new BaseType(TypeKind.ERROR, stmt.posn);

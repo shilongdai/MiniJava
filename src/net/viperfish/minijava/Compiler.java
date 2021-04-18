@@ -1,17 +1,17 @@
 package net.viperfish.minijava;
 
 import net.viperfish.minijava.ast.Package;
-import net.viperfish.minijava.ast.*;
+import net.viperfish.minijava.codegen.CodeGenerator;
 import net.viperfish.minijava.context.ContextAnalysisErrorException;
 import net.viperfish.minijava.context.ContextAnalyzer;
 import net.viperfish.minijava.context.ContextualErrors;
+import net.viperfish.minijava.mJAM.Interpreter;
+import net.viperfish.minijava.mJAM.ObjectFile;
 import net.viperfish.minijava.parser.GrammarException;
 import net.viperfish.minijava.parser.MiniJavaEBNFGrammarParser;
 import net.viperfish.minijava.parser.RecursiveParser;
 import net.viperfish.minijava.scanner.ParsingException;
-import net.viperfish.minijava.scanner.Token;
 import net.viperfish.minijava.scanner.TokenScanner;
-import net.viperfish.minijava.scanner.TokenType;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,6 +35,17 @@ public class Compiler {
             addPredefinedClasses(ast);
             ContextAnalyzer analyzer = new ContextAnalyzer();
             ast = analyzer.analyze(ast);
+
+            CodeGenerator codeGenerator = new CodeGenerator();
+            int status = codeGenerator.genCode(ast);
+            if(status == -1) {
+                System.out.println("Did not find main class");
+                System.exit(4);
+            }
+
+            ObjectFile objectFile = new ObjectFile("obj.mJAM");
+            objectFile.write();
+            Interpreter.main(new String[] {});
         } catch (FileNotFoundException e) {
             System.out.println(String.format("The file %s is not found", argv[0]));
             System.exit(1);
@@ -56,23 +67,9 @@ public class Compiler {
     }
 
     public static void addPredefinedClasses(Package ast) {
-        ClassDecl str = new ClassDecl("String", new FieldDeclList(), new MethodDeclList(), null);
-        str.type = new BaseType(TypeKind.UNSUPPORTED, null);
-        ParameterDeclList params = new ParameterDeclList();
-        params.add(new ParameterDecl(new BaseType(TypeKind.INT, null), "n", null));
-        MethodDecl println = new MethodDecl(new FieldDecl(false, false, new BaseType(TypeKind.VOID, null), "println", null), params, new StatementList(), null);
-        MethodDeclList methodList = new MethodDeclList();
-        methodList.add(println);
-        ClassDecl printStream = new ClassDecl("_PrintStream", new FieldDeclList(), methodList, null);
-        FieldDeclList fieldList = new FieldDeclList();
-        ClassType printStreamType = new ClassType(new Identifier(new Token(TokenType.ID, "_PrintStream", null)), null);
-        fieldList.add(new FieldDecl(false, true, printStreamType, "out", null));
-        ClassDecl system = new ClassDecl("System", fieldList, new MethodDeclList(), null);
-
-        ast.classDeclList.add(str, 0);
-        ast.classDeclList.add(printStream, 0);
-        ast.classDeclList.add(system, 0);
-
+        ast.classDeclList.add(CompilerGlobal.sysString, 0);
+        ast.classDeclList.add(CompilerGlobal.sysPrintStream, 0);
+        ast.classDeclList.add(CompilerGlobal.sysSystem, 0);
     }
 
 }

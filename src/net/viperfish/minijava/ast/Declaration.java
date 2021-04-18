@@ -12,6 +12,8 @@ public abstract class Declaration extends AST {
 
     public String name;
     public TypeDenoter type;
+    public RuntimeEntity runtimeEntity;
+
     public Declaration(String name, TypeDenoter type, SourcePosition posn) {
         super(posn);
         this.name = name;

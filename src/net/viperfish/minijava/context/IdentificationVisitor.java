@@ -314,32 +314,14 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     @Override
     public Object visitQRef(QualRef ref, FilterableIdentificationTable arg) {
         this.visitCorrectRef(ref.ref, arg);
-        Declaration qualRefDecl = ref.ref.dominantDecl;
-        ClassDecl qualClass = getOriginalClass(qualRefDecl);
-        if (qualClass != null) {
-            Declaration target = null;
-            for (MemberDecl d : qualClass.methodDeclList) {
-                if (accessible(d, ref.ref, qualClass, arg) && d.name.equals(ref.id.spelling)) {
-                    target = d;
-                    break;
-                }
-            }
-            if (target == null) {
-                for (MemberDecl d : qualClass.fieldDeclList) {
-                    if (accessible(d, ref.ref, qualClass, arg) && d.name.equals(ref.id.spelling)) {
-                        target = d;
-                        break;
-                    }
-                }
-            }
-            FilterableIdentificationTable table = new ListLeveldIdentificationTable();
-            table.registerDeclaration(ref.id.spelling, target);
-            this.visitIdentifier(ref.id, table);
-            ref.dominantDecl = ref.id.dominantDecl;
-        } else {
-            notQualifiedError(ref.ref);
+        if(ref.ref.dominantDecl == null) {
+            return null;
         }
-        return null;
+        if(ref.ref.dominantDecl.type != null && ref.ref.dominantDecl.type.typeKind == TypeKind.ARRAY) {
+            return handleArrayLength(ref, arg);
+        } else {
+            return handleRegularQRef(ref, arg);
+        }
     }
 
     @Override
@@ -466,6 +448,47 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         }
 
         return pass;
+    }
+
+    private Object handleArrayLength(QualRef ref, FilterableIdentificationTable arg) {
+        if(!ref.id.spelling.equals("length")) {
+            undefinedSymbolError(ref.id);
+            return null;
+        }
+
+        FieldDecl lengthDecl = new FieldDecl(false, false, new BaseType(TypeKind.INT, null), "length", null);
+        ref.id.dominantDecl = lengthDecl;
+        ref.dominantDecl = lengthDecl;
+        return null;
+    }
+
+    private Object handleRegularQRef(QualRef ref, FilterableIdentificationTable arg) {
+        Declaration qualRefDecl = ref.ref.dominantDecl;
+        ClassDecl qualClass = getOriginalClass(qualRefDecl);
+        if (qualClass != null) {
+            Declaration target = null;
+            for (MemberDecl d : qualClass.methodDeclList) {
+                if (accessible(d, ref.ref, qualClass, arg) && d.name.equals(ref.id.spelling)) {
+                    target = d;
+                    break;
+                }
+            }
+            if (target == null) {
+                for (MemberDecl d : qualClass.fieldDeclList) {
+                    if (accessible(d, ref.ref, qualClass, arg) && d.name.equals(ref.id.spelling)) {
+                        target = d;
+                        break;
+                    }
+                }
+            }
+            FilterableIdentificationTable table = new ListLeveldIdentificationTable();
+            table.registerDeclaration(ref.id.spelling, target);
+            this.visitIdentifier(ref.id, table);
+            ref.dominantDecl = ref.id.dominantDecl;
+        } else {
+            notQualifiedError(ref.ref);
+        }
+        return null;
     }
 
     private ClassDecl getOriginalClass(Declaration dec) {

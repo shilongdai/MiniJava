@@ -1,0 +1,10 @@
+class Test {
+
+    public static void main(String[] argv) {
+        if(argv.length == 0) {
+            int[] test = new int[5];
+            boolean t = test.length == 5;
+        }
+    }
+
+}
