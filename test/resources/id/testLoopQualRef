@@ -1,0 +1,22 @@
+
+
+class A {
+
+    public static void main(String[] argv) {
+
+        System.out.println(B);
+
+        beta.alpha.beta.alpha.beta.A = B + 1;
+        System.out.println(C.A);
+    }
+
+    public static A alpha;
+    public static C beta;
+    private static int B;
+
+}
+
+class C {
+    public static int A;
+    public static A alpha;
+}

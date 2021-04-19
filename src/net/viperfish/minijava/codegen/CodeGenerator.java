@@ -13,9 +13,12 @@ public class CodeGenerator implements Visitor<Object, Object> {
     private Collection<PatchInfo> patchAddress;
     private Collection<PatchRaw> patchQueue;
 
+    private short staticOffset;
+
     public CodeGenerator() {
         patchAddress = new ArrayList<>();
         patchQueue = new ArrayList<>();
+        staticOffset = 0;
     }
 
     public int genCode(Package program) {
@@ -29,22 +32,13 @@ public class CodeGenerator implements Visitor<Object, Object> {
             return -1;
         }
 
-        Machine.emit(Machine.Op.LOADL, 0, 0, 0);
-        Machine.emit(Machine.Prim.newarr);
-        int mainCallAddr = Machine.nextInstrAddr();
-        Machine.emit(Machine.Op.CALL, 0);
-        patchAddress.add(new PatchInfo(mainClass.mainMethod, mainCallAddr));
-        Machine.emit(Machine.Op.HALT, 0);
-
         for(ClassDecl cd : prog.classDeclList) {
             int fieldSize = 0;
             for(FieldDecl f : cd.fieldDeclList) {
-                if(f.isStatic) {
-                    continue;
-                }
-
                 int size = (int) f.visit(this, fieldSize);
-                fieldSize += size;
+                if(!f.isStatic) {
+                    fieldSize += size;
+                }
 
                 if(fieldSize == Short.MAX_VALUE) {
                     throw new IllegalArgumentException("Longer than shorts");
@@ -53,6 +47,13 @@ public class CodeGenerator implements Visitor<Object, Object> {
 
             cd.runtimeEntity = new RuntimeEntity(fieldSize);
         }
+
+        Machine.emit(Machine.Op.LOADL, 0, 0, 0);
+        Machine.emit(Machine.Prim.newarr);
+        int mainCallAddr = Machine.nextInstrAddr();
+        Machine.emit(Machine.Op.CALL, 0);
+        patchAddress.add(new PatchInfo(mainClass.mainMethod, mainCallAddr));
+        Machine.emit(Machine.Op.HALT, 0);
 
         for(ClassDecl c : prog.classDeclList) {
             c.visit(this, arg);
@@ -75,9 +76,15 @@ public class CodeGenerator implements Visitor<Object, Object> {
     @Override
     public Integer visitFieldDecl(FieldDecl fd, Object arg) {
         int size = (int) fd.type.visit(this, arg);
-        int offset = (int) arg;
-        KnownAddress relative = new KnownAddress(0, new RuntimeAddress(Machine.Reg.OB, (short) 0), false);
-        fd.runtimeEntity = new UnknownAddress(relative, offset, size, RefType.FIELD);
+        if(!fd.isStatic) {
+            int offset = (int) arg;
+            KnownAddress relative = new KnownAddress(0, new RuntimeAddress(Machine.Reg.OB, (short) 0), false);
+            fd.runtimeEntity = new UnknownAddress(relative, offset, size, RefType.FIELD);
+        } else {
+            Machine.emit(Machine.Op.PUSH, size);
+            fd.runtimeEntity = new KnownAddress(size, new RuntimeAddress(Machine.Reg.SB, staticOffset), true);
+            staticOffset += size;
+        }
         return size;
     }
 
@@ -217,10 +224,10 @@ public class CodeGenerator implements Visitor<Object, Object> {
     public Object visitReturnStmt(ReturnStmt stmt, Object arg) {
         ActivationFrame f = (ActivationFrame) arg;
         if(stmt.returnExpr == null) {
-            Machine.emit(Machine.Op.RETURN, 0, 0, f.argCount);
+            Machine.emit(Machine.Op.RETURN, 0, 0, f.getArgCount());
         } else {
             int size = (int) stmt.returnExpr.visit(this, null);
-            Machine.emit(Machine.Op.RETURN, size, 0, f.argCount);
+            Machine.emit(Machine.Op.RETURN, size, 0, f.getArgCount());
         }
         return null;
     }
@@ -280,13 +287,6 @@ public class CodeGenerator implements Visitor<Object, Object> {
     @Override
     public Object visitRefExpr(RefExpr expr, Object arg) {
         RuntimeEntity entity = (RuntimeEntity) expr.ref.visit(this, null);
-        if(expr.ref instanceof ThisRef) {
-            UnknownAddress addr = (UnknownAddress) entity;
-            KnownAddress knownAddress = (KnownAddress) addr.getRef();
-            Machine.emit(Machine.Op.LOADA, knownAddress.getAddress().getRegister(), knownAddress.getAddress().getOffset());
-            return entity.getSize();
-        }
-
         if(entity instanceof KnownAddress) {
             KnownAddress addr = (KnownAddress) entity;
             RuntimeAddress runtimeAddress = addr.getAddress();
@@ -372,7 +372,7 @@ public class CodeGenerator implements Visitor<Object, Object> {
         } else if(ref.dominantDecl instanceof FieldDecl) {
             FieldDecl field = (FieldDecl) ref.dominantDecl;
             if(field.isStatic) {
-                throw new UnsupportedOperationException("Unsupported");
+                return field.runtimeEntity;
             } else {
                 UnknownAddress fieldAddr = (UnknownAddress) field.runtimeEntity;
                 return new UnknownAddress(entity, fieldAddr.getOffset(), fieldAddr.getTargetSize(), RefType.FIELD);
@@ -380,7 +380,7 @@ public class CodeGenerator implements Visitor<Object, Object> {
         } else if(ref.dominantDecl instanceof MethodDecl) {
             MethodDecl decl = (MethodDecl) ref.dominantDecl;
             if(decl.isStatic) {
-                throw new UnsupportedOperationException("Unsupported");
+                return null;
             } else {
                 return new UnknownAddress(entity, 0, 0, null);
             }
@@ -396,6 +396,8 @@ public class CodeGenerator implements Visitor<Object, Object> {
 
     @Override
     public Object visitOperator(Operator op, Object arg) {
+        // TODO: Support short circuit
+
         OpsInfo info = (OpsInfo) arg;
         switch (op.spelling) {
             case ">":
@@ -486,6 +488,7 @@ public class CodeGenerator implements Visitor<Object, Object> {
 
 
     private MainInfo findMainClass(ClassDeclList classes) {
+        // TODO: detect 2 main class
         for(ClassDecl c : classes) {
             for(MethodDecl m : c.methodDeclList) {
                 if(m.type.typeKind == TypeKind.VOID && m.isStatic && !m.isPrivate && m.name.equals("main")) {
@@ -546,8 +549,8 @@ public class CodeGenerator implements Visitor<Object, Object> {
             Machine.emit(Machine.Op.CALLI, 0);
         } else {
             if(decl.isStatic) {
-                // TODO: Implement static support
-                throw new UnsupportedOperationException("Unsupported");
+                callAddr = Machine.nextInstrAddr();
+                Machine.emit(Machine.Op.CALL, 0);
             } else {
                 Machine.emit(Machine.Op.LOADA, Machine.Reg.OB, 0);
                 callAddr = Machine.nextInstrAddr();

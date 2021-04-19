@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class IdentificationTest {
 
-    private static String[] ID_SUCCESS = new String[] {"idBuiltin", "basicId", "complexId", "scopeRuleSuccess", "staticSuccess", "testArrayLength"};
+    private static String[] ID_SUCCESS = new String[] {"idBuiltin", "basicId", "complexId", "scopeRuleSuccess", "staticSuccess", "testArrayLength", "testLoopQualRef"};
     private static Map<String, Integer> ID_FAILS;
 
     static {
