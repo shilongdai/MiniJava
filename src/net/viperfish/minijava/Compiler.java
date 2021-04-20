@@ -42,6 +42,10 @@ public class Compiler {
                 System.out.println("Did not find main class");
                 System.exit(4);
             }
+            if(status == -2) {
+                System.out.println("Found 2 main class");
+                System.exit(4);
+            }
 
             ObjectFile objectFile = new ObjectFile("obj.mJAM");
             objectFile.write();

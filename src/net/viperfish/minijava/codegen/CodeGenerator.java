@@ -7,6 +7,7 @@ import net.viperfish.minijava.mJAM.Machine;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class CodeGenerator implements Visitor<Object, Object> {
 
@@ -27,10 +28,14 @@ public class CodeGenerator implements Visitor<Object, Object> {
 
     @Override
     public Object visitPackage(Package prog, Object arg) {
-        MainInfo mainClass = findMainClass(prog.classDeclList);
-        if(mainClass == null) {
+        Collection<MainInfo> mainClassList = findMainClass(prog.classDeclList);
+        if(mainClassList.size() == 0) {
             return -1;
         }
+        if(mainClassList.size() > 1) {
+            return -2;
+        }
+        MainInfo mainClass = mainClassList.iterator().next();
 
         for(ClassDecl cd : prog.classDeclList) {
             int fieldSize = 0;
@@ -146,8 +151,15 @@ public class CodeGenerator implements Visitor<Object, Object> {
 
     @Override
     public Object visitBlockStmt(BlockStmt stmt, Object arg) {
+        // TODO: deal with var decl
+        ActivationFrame frame = (ActivationFrame) arg;
+        ActivationFrame fakeFrame = new ActivationFrame(frame.getAllocatedVar(), 0);
         for(Statement s : stmt.sl) {
-            s.visit(this, arg);
+            s.visit(this, fakeFrame);
+        }
+        int words = fakeFrame.getAllocatedVar() - frame.getAllocatedVar();
+        if(words != 0) {
+            Machine.emit(Machine.Op.POP, 0, 0, words);
         }
         return null;
     }
@@ -155,16 +167,7 @@ public class CodeGenerator implements Visitor<Object, Object> {
     @Override
     public Object visitVardeclStmt(VarDeclStmt stmt, Object arg) {
         stmt.varDecl.visit(this, arg);
-        RuntimeEntity entity = stmt.varDecl.runtimeEntity;
-        Machine.emit(Machine.Op.PUSH, entity.getSize());
         stmt.initExp.visit(this, null);
-
-        if(entity instanceof KnownAddress) {
-            KnownAddress addr = (KnownAddress) entity;
-            Machine.emit(Machine.Op.STORE, addr.getSize(), addr.getAddress().getRegister(), addr.getAddress().getOffset());
-        } else {
-            throw new IllegalArgumentException("Illegal AST");
-        }
         return null;
     }
 
@@ -280,8 +283,26 @@ public class CodeGenerator implements Visitor<Object, Object> {
     @Override
     public Object visitBinaryExpr(BinaryExpr expr, Object arg) {
         int size = (int) expr.left.visit(this, arg);
+        int jumpAddr = Machine.nextInstrAddr();
+        int patch = -1;
+        if(expr.operator.spelling.equals("&&")) {
+            Machine.emit(Machine.Op.JUMPIF, 0, Machine.Reg.CP, 0);
+            Machine.emit(Machine.Op.LOADL, 1);
+            patch = 0;
+        }
+        if(expr.operator.spelling.equals("||")) {
+            Machine.emit(Machine.Op.JUMPIF, 1, Machine.Reg.CP, 0);
+            Machine.emit(Machine.Op.LOADL, 0);
+            patch = 1;
+        }
         expr.right.visit(this, arg);
-        return expr.operator.visit(this, new OpsInfo(size, false));
+        int resultSize = (int) expr.operator.visit(this, new OpsInfo(size, false));
+        int endAddr = Machine.nextInstrAddr();
+        if(patch != -1) {
+            Machine.patch(jumpAddr, endAddr - jumpAddr);
+            Machine.emit(Machine.Op.LOADL, patch);
+        }
+        return resultSize;
     }
 
     @Override
@@ -487,21 +508,21 @@ public class CodeGenerator implements Visitor<Object, Object> {
     }
 
 
-    private MainInfo findMainClass(ClassDeclList classes) {
-        // TODO: detect 2 main class
+    private Collection<MainInfo> findMainClass(ClassDeclList classes) {
+        List<MainInfo> result = new ArrayList<>();
         for(ClassDecl c : classes) {
             for(MethodDecl m : c.methodDeclList) {
                 if(m.type.typeKind == TypeKind.VOID && m.isStatic && !m.isPrivate && m.name.equals("main")) {
                     if(m.parameterDeclList.size() == 1 && m.parameterDeclList.get(0).type.typeKind == TypeKind.ARRAY) {
                         ArrayType arr = (ArrayType) m.parameterDeclList.get(0).type;
                         if(arr.eltType.typeKind == TypeKind.UNSUPPORTED) {
-                            return new MainInfo(c, m);
+                            result.add(new MainInfo(c, m));
                         }
                     }
                 }
             }
         }
-        return null;
+        return result;
     }
 
     private void resolveUnknownAddress(UnknownAddress addr) {
@@ -568,69 +589,6 @@ public class CodeGenerator implements Visitor<Object, Object> {
         } else if(entity instanceof UnknownAddress) {
             UnknownAddress uaddr = (UnknownAddress) entity;
             resolveUnknownAddress(uaddr);
-        }
-    }
-
-    private static class MainInfo {
-
-        public ClassDecl mainClass;
-        public MethodDecl mainMethod;
-
-        public MainInfo(ClassDecl mainClass, MethodDecl mainMethod) {
-            this.mainClass = mainClass;
-            this.mainMethod = mainMethod;
-        }
-    }
-
-    private static class OpsInfo {
-        public int size;
-        public boolean unary;
-
-        public OpsInfo(int size, boolean unary) {
-            this.size = size;
-            this.unary = unary;
-        }
-    }
-
-    private static class PatchInfo {
-
-        public Declaration decl;
-        public int instruction;
-
-        public PatchInfo(Declaration decl, int instruction) {
-            this.decl = decl;
-            this.instruction = instruction;
-        }
-    }
-
-    private static class PatchRaw {
-        public int instruction;
-        public int number;
-
-        public PatchRaw(int instruction, int number) {
-            this.instruction = instruction;
-            this.number = number;
-        }
-    }
-
-    private static class ActivationFrame {
-
-        private int allocatedVar;
-        private int argCount;
-
-        public ActivationFrame(int allocatedVar, int argCount) {
-            this.allocatedVar = allocatedVar;
-            this.argCount = argCount;
-        }
-
-        public int getAllocatedVarAndIncrement(int amount) {
-            int old = allocatedVar;
-            allocatedVar += amount;
-            return old;
-        }
-
-        public int getArgCount() {
-            return argCount;
         }
     }
 
