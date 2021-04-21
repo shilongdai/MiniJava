@@ -5,7 +5,6 @@ import net.viperfish.minijava.codegen.CodeGenerator;
 import net.viperfish.minijava.context.ContextAnalysisErrorException;
 import net.viperfish.minijava.context.ContextAnalyzer;
 import net.viperfish.minijava.context.ContextualErrors;
-import net.viperfish.minijava.mJAM.Interpreter;
 import net.viperfish.minijava.mJAM.ObjectFile;
 import net.viperfish.minijava.parser.GrammarException;
 import net.viperfish.minijava.parser.MiniJavaEBNFGrammarParser;
@@ -47,9 +46,9 @@ public class Compiler {
                 System.exit(4);
             }
 
-            ObjectFile objectFile = new ObjectFile("obj.mJAM");
+            String output = stripExtension(argv[0]);
+            ObjectFile objectFile = new ObjectFile(output);
             objectFile.write();
-            Interpreter.main(new String[] {});
         } catch (FileNotFoundException e) {
             System.out.println(String.format("The file %s is not found", argv[0]));
             System.exit(1);
@@ -74,6 +73,14 @@ public class Compiler {
         ast.classDeclList.add(CompilerGlobal.sysString, 0);
         ast.classDeclList.add(CompilerGlobal.sysPrintStream, 0);
         ast.classDeclList.add(CompilerGlobal.sysSystem, 0);
+    }
+
+    private static String stripExtension(String input) {
+        String[] parts = input.split("\\.");
+        if(parts[parts.length - 1].equals("java")) {
+            parts[parts.length - 1] = "mJAM";
+        }
+        return String.join(".", parts);
     }
 
 }
