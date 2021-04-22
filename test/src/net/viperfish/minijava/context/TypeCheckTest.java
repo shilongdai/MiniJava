@@ -28,6 +28,7 @@ public class TypeCheckTest {
         TYPE_FAILS.put("arrayTypeFail", new HashSet<>(Arrays.asList(5, 8, 9, 11, 14, 15, 18, 19, 20, 21, 51, 55, 57, 61, 63, 65, 67)));
         TYPE_FAILS.put("functionSignatureFails", new HashSet<>(Arrays.asList(5, 7, 11, 18, 51, 52, 53, 54)));
         TYPE_FAILS.put("failBuiltIn", new HashSet<>(Arrays.asList(4, 8, 9, 14, 15, 19)));
+        TYPE_FAILS.put("assign2ArrayLength", new HashSet<>(Collections.singletonList(7)));
     }
 
     @Test

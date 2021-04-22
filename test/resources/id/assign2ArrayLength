@@ -1,0 +1,11 @@
+
+class Test {
+
+    public static void main(String[] argv) {
+        if(argv.length == 0) {
+            int[] test = new int[5];
+            test.length = 6;
+        }
+    }
+
+}

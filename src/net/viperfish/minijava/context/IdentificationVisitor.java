@@ -374,7 +374,7 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     }
 
     private void notQualifiedError(Reference ref) {
-        this.errors.add(new ContextualErrors(ref.posn, "not a qualified reference"));
+        this.errors.add(new ContextualErrors(ref.posn, "not a valid qualified reference"));
     }
 
     private void referenceDeclaringVariable(VarDecl decl) {

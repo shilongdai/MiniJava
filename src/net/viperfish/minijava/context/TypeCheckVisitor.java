@@ -167,6 +167,15 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
         TypeDenoter refType = VisitorUtils.visitCorrectRef(this, null, stmt.ref);
         TypeDenoter assignedType = VisitorUtils.visitCorrectExp(this, null, stmt.val);
 
+        if(stmt.ref instanceof QualRef) {
+            QualRef qualRef = (QualRef) stmt.ref;
+            TypeDenoter type = qualRef.ref.dominantType;
+            if(type.typeKind.equals(TypeKind.ARRAY) && qualRef.id.spelling.equals("length")) {
+                cannotAssign2Length(qualRef);
+                return null;
+            }
+        }
+
         if(!refType.equals(assignedType)) {
             expectMatchingTypeError(stmt.val);
         }
@@ -518,6 +527,10 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
 
     private void missingReturnStmt(MethodDecl decl) {
         errors.add(new ContextualErrors(decl.posn, "Missing return statement"));
+    }
+
+    private void cannotAssign2Length(QualRef ref) {
+        errors.add(new ContextualErrors(ref.posn, "Cannot assign to array.length"));
     }
 
     private TypeDenoter validMethodInvocation(Reference ref, ExprList parameters) {
