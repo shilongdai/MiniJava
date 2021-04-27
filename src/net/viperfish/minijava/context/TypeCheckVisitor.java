@@ -263,7 +263,7 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
             }
 
         } else {
-            return thenType;
+            return null;
         }
 
     }

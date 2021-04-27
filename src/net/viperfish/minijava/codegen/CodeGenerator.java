@@ -589,6 +589,7 @@ public class CodeGenerator implements Visitor<Object, Object> {
         } else if(entity instanceof UnknownAddress) {
             UnknownAddress uaddr = (UnknownAddress) entity;
             resolveUnknownAddress(uaddr);
+            getUnknownAddrVal(uaddr);
         }
     }
 
