@@ -20,8 +20,13 @@ public abstract class AST {
     public String toString() {
         String fullClassName = this.getClass().getName();
         String cn = fullClassName.substring(1 + fullClassName.lastIndexOf('.'));
-        if (ASTDisplay.showPosition)
-            cn = cn + " " + posn.toString();
+        if (ASTDisplay.showPosition) {
+            String posnStr = "null";
+            if(posn != null) {
+                posnStr = posn.toString();
+            }
+            cn = cn + " " + posnStr;
+        }
         return cn;
     }
 

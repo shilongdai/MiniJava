@@ -17,7 +17,7 @@ import java.util.*;
 
 public class TypeCheckTest {
 
-    private static String[] Type_SUCCESS = new String[] {"idBuiltin", "basicId", "complexId", "scopeRuleSuccess", "staticSuccess", "testArrayLength", "testLoopQualRef"};
+    private static String[] Type_SUCCESS = new String[] {"idBuiltin", "basicId", "complexId", "scopeRuleSuccess", "staticSuccess", "testArrayLength", "testLoopQualRef", "ihpass101.java"};
 
     private static Map<String, Set<Integer>> TYPE_FAILS;
 

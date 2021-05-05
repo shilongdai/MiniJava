@@ -30,6 +30,7 @@ public class TokenScanner {
         KEYWORDS.put("false", TokenType.FALSE);
         KEYWORDS.put("new", TokenType.NEW);
         KEYWORDS.put("null", TokenType.NULL);
+        KEYWORDS.put("extends", TokenType.EXTENDS);
     }
 
     private PushbackInputStream input;

@@ -47,6 +47,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         AST_CONSTRUCTORS.put("expOrNull", new PassOverASTConstructor());
         AST_CONSTRUCTORS.put("rExpOrNull", new PassOverASTConstructor());
         AST_CONSTRUCTORS.put("eqExpBaseDecision", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("extendsId", new PassOverASTConstructor());
+        AST_CONSTRUCTORS.put("shouldExtends", new PassOverASTConstructor());
 
         // Type
         AST_CONSTRUCTORS.put("sqBrackets", new SQBracketASTConstructor());
@@ -240,6 +242,8 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         GRAMMAR.registerTerminalSymbol(Void);
         ParsableSymbol Class = new TokenTypeParsibleSymbol(TokenType.CLASS);
         GRAMMAR.registerTerminalSymbol(Class);
+        ParsableSymbol Extends = new TokenTypeParsibleSymbol(TokenType.EXTENDS);
+        GRAMMAR.registerTerminalSymbol(Extends);
         ParsableSymbol terminalSymbol = new TokenTypeParsibleSymbol(TokenType.EOT);
         GRAMMAR.registerTerminalSymbol(terminalSymbol);
 
@@ -486,10 +490,14 @@ public class MiniJavaEBNFGrammarParser extends EBNFGrammarBackedParser {
         Symbol fieldDeclaration = new CompositeSymbol("FieldDeclaration", fieldDecList);
         GRAMMAR.registerNonTerminalSymbol(fieldDeclaration);
 
-        // ClassDeclaration ::= class id { ( FieldDeclaration | MethodDeclaration )* }
+        // ClassDeclaration ::= class id (extends id)? { ( FieldDeclaration | MethodDeclaration )* }
         List<Symbol> classDecList = new ArrayList<>();
         classDecList.add(Class);
         classDecList.add(id);
+        // (extends id)?
+        Symbol extendsId = new CompositeSymbol("extendsId", Arrays.asList(Extends, id));
+        Symbol exntedsIdPossible = new DecisionPointSymbol("shouldExtends", Arrays.asList(extendsId, EBNFGrammar.EMPTY_STRING));
+        classDecList.add(exntedsIdPossible);
         classDecList.add(llb);
         // decompose the declarations for LL1
         List<Symbol> typedDeclaration = new ArrayList<>();

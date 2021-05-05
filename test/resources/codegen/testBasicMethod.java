@@ -1,0 +1,1 @@
+class A {    public int test(int x) {        return x + test2();    }    public int test2() {        return 1;    }}class B {    public static void main(String[] argv) {        A a = new A();        int x = a.test(1);        System.out.println(x);    }}

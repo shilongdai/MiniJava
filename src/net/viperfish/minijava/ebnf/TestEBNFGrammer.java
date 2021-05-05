@@ -9,7 +9,7 @@ import java.util.*;
 public class TestEBNFGrammer {
 
     public static void main(String argv[]) {
-        testGrammar4();
+        constructMJavaGrammar();
     }
 
     private static void testGrammar1() {
@@ -30,9 +30,8 @@ public class TestEBNFGrammer {
         printGrammarProperties(grammar);
     }
 
-    private static void testMiniJava() {
+    private static void constructMJavaGrammar() {
         EBNFGrammar GRAMMAR = new EBNFGrammar();
-
         // terminals
         ParsableSymbol id = new TokenTypeParsibleSymbol(TokenType.ID);
         GRAMMAR.registerTerminalSymbol(id);
@@ -104,6 +103,8 @@ public class TestEBNFGrammer {
         GRAMMAR.registerTerminalSymbol(Void);
         ParsableSymbol Class = new TokenTypeParsibleSymbol(TokenType.CLASS);
         GRAMMAR.registerTerminalSymbol(Class);
+        ParsableSymbol Extends = new TokenTypeParsibleSymbol(TokenType.EXTENDS);
+        GRAMMAR.registerTerminalSymbol(Extends);
         ParsableSymbol terminalSymbol = new TokenTypeParsibleSymbol(TokenType.EOT);
         GRAMMAR.registerTerminalSymbol(terminalSymbol);
 
@@ -350,10 +351,14 @@ public class TestEBNFGrammer {
         Symbol fieldDeclaration = new CompositeSymbol("FieldDeclaration", fieldDecList);
         GRAMMAR.registerNonTerminalSymbol(fieldDeclaration);
 
-        // ClassDeclaration ::= class id { ( FieldDeclaration | MethodDeclaration )* }
+        // ClassDeclaration ::= class id (extends id)? { ( FieldDeclaration | MethodDeclaration )* }
         List<Symbol> classDecList = new ArrayList<>();
         classDecList.add(Class);
         classDecList.add(id);
+        // (extends id)?
+        Symbol extendsId = new CompositeSymbol("extendsId", Arrays.asList(Extends, id));
+        Symbol exntedsIdPossible = new DecisionPointSymbol("shouldExtends", Arrays.asList(extendsId, EBNFGrammar.EMPTY_STRING));
+        classDecList.add(exntedsIdPossible);
         classDecList.add(llb);
         // decompose the declarations for LL1
         List<Symbol> typedDeclaration = new ArrayList<>();

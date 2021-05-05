@@ -13,7 +13,7 @@ import java.util.Scanner;
 
 public class EBNFParserTest {
 
-    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement", "testComprehensive", "testAST", "testNull"};
+    private static final String[] TEST_SUCCESS = new String[] {"testBasicDeclaration", "testFullClassDec", "testExpression", "testStatement", "testComprehensive", "testAST", "testNull", "testInheritence"};
     private static final String[] TEST_FAIL = new String[] {};
 
     @Test

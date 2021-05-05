@@ -10,6 +10,7 @@ import net.viperfish.minijava.scanner.SourcePosition;
 
 public class MethodDecl extends MemberDecl {
 
+    public int descriptorOffset;
     public ParameterDeclList parameterDeclList;
     public StatementList statementList;
 
@@ -17,6 +18,7 @@ public class MethodDecl extends MemberDecl {
         super(md, posn);
         parameterDeclList = pl;
         statementList = sl;
+        descriptorOffset = -1;
     }
 
     public <A, R> R visit(Visitor<A, R> v, A o) {

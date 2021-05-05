@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class IdentificationTest {
 
-    private static String[] ID_SUCCESS = new String[] {"idBuiltin", "basicId", "complexId", "scopeRuleSuccess", "staticSuccess", "testArrayLength", "testLoopQualRef"};
+    private static String[] ID_SUCCESS = new String[] {"idBuiltin", "basicId", "complexId", "scopeRuleSuccess", "staticSuccess", "testArrayLength", "testLoopQualRef", "ihpass101.java"};
     private static Map<String, Integer> ID_FAILS;
 
     static {
@@ -34,6 +34,8 @@ public class IdentificationTest {
         ID_FAILS.put("MultilevelAccessFail", 15);
         ID_FAILS.put("commentLineNum", 3);
         ID_FAILS.put("CallNonStatic", 12);
+        ID_FAILS.put("ihfail101.java", 23);
+        ID_FAILS.put("ihfail102.java", 23);
     }
 
     @Test

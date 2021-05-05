@@ -628,7 +628,7 @@ public class Interpreter {
 				if (invalidHeapRef(addr))
 					break;
 				int classDescAddr = data[addr - 2];
-				if (classDescAddr >= ST || classDescAddr <= SB || d >= data[classDescAddr + 1] || d < 0) {
+				if (classDescAddr >= ST || classDescAddr < SB || d >= data[classDescAddr + 1] || d < 0) {
 					status = failedMethodIndex;
 					break;
 				}
@@ -640,7 +640,7 @@ public class Interpreter {
 				OB = addr;
 				LB = ST;
 				ST = ST + 3;
-				CP = data[classDescAddr + 2 + n];
+				CP = data[classDescAddr + 2 + d];
 			}
 			break;
 		case PUSH: // push d elements on stack

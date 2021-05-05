@@ -1,0 +1,25 @@
+class A {
+
+    public int id;
+
+    public int getId() {
+
+    }
+
+}
+
+class B extends A {
+
+    public int get() {
+
+    }
+
+}
+
+class C extends A {
+
+}
+
+class D {
+
+}

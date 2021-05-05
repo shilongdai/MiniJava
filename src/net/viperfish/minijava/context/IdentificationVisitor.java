@@ -10,7 +10,7 @@ import java.util.*;
 public class IdentificationVisitor implements Visitor<FilterableIdentificationTable, Object> {
 
     private List<ContextualErrors> errors;
-    private static final int MAX_LEVEL_OVERRIDE = 3;
+    private static final int MAX_LEVEL_OVERRIDE = 4;
 
     private static final String CURRENT_CLASS = "-this.class";
     private static final String THIS_FIELD = "-this";
@@ -39,6 +39,13 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
             }
         }
 
+        for(ClassDecl c : prog.classDeclList) {
+            if(c.superClassId != null) {
+                c.superClassId.visit(this, arg);
+                c.superClass = (ClassDecl) c.superClassId.dominantDecl;
+            }
+        }
+
         for (ClassDecl c : prog.classDeclList) {
             this.visitClassDecl(c, arg);
         }
@@ -49,6 +56,12 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     @Override
     public Object visitClassDecl(ClassDecl cd, FilterableIdentificationTable arg) {
         visitCorrectType(cd.type, arg);
+        arg.openScope();
+        try {
+            resolveSuperclassDecls(arg, new HashSet<>(), cd.superClass);
+        } catch (CyclicExtendsExcpetion cyclicExtendsExcpetion) {
+            cyclicSuperclassError(cd);
+        }
         arg.openScope();
         for (MemberDecl decl : cd.fieldDeclList) {
             Declaration conflict = checkCurrentConflict(decl.name, arg);
@@ -72,6 +85,7 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         for (MethodDecl decl : cd.methodDeclList) {
             this.visitMethodDecl(decl, arg);
         }
+        arg.closeScope();
         arg.closeScope();
         return null;
     }
@@ -320,7 +334,11 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         if(ref.ref.dominantDecl.type != null && ref.ref.dominantDecl.type.typeKind == TypeKind.ARRAY) {
             return handleArrayLength(ref, arg);
         } else {
-            return handleRegularQRef(ref, arg);
+            try {
+                return handleRegularQRef(ref, arg);
+            } catch (InvalidQRefException e) {
+                return null;
+            }
         }
     }
 
@@ -374,11 +392,15 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
     }
 
     private void notQualifiedError(Reference ref) {
-        this.errors.add(new ContextualErrors(ref.posn, "not a valid qualified reference"));
+        this.errors.add(new ContextualErrors(ref.posn, "not a valid qualified reference, access error or undefined symbol"));
     }
 
     private void referenceDeclaringVariable(VarDecl decl) {
         this.errors.add(new ContextualErrors(decl.posn, "Cannot reference the variable currently being declared"));
+    }
+
+    private void cyclicSuperclassError(ClassDecl subclass) {
+        this.errors.add(new ContextualErrors(subclass.posn, "Detected cyclic super class to itself"));
     }
 
     private Declaration checkCurrentConflict(String id, FilterableIdentificationTable table) {
@@ -462,31 +484,24 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         return null;
     }
 
-    private Object handleRegularQRef(QualRef ref, FilterableIdentificationTable arg) {
+    private Object handleRegularQRef(QualRef ref, FilterableIdentificationTable arg) throws InvalidQRefException {
         Declaration qualRefDecl = ref.ref.dominantDecl;
         ClassDecl qualClass = getOriginalClass(qualRefDecl);
         if (qualClass != null) {
-            Declaration target = null;
-            for (MemberDecl d : qualClass.methodDeclList) {
-                if (accessible(d, ref.ref, qualClass, arg) && d.name.equals(ref.id.spelling)) {
-                    target = d;
-                    break;
-                }
+            Map<String, MemberDecl> attrs = getTargetAttributes(ref.ref, qualClass, arg);
+            Declaration target = attrs.get(ref.id.spelling);
+            if(target == null) {
+                notQualifiedError(ref);
+                throw new InvalidQRefException();
+            } else {
+                FilterableIdentificationTable table = new ListLeveldIdentificationTable();
+                table.registerDeclaration(ref.id.spelling, target);
+                this.visitIdentifier(ref.id, table);
+                ref.dominantDecl = ref.id.dominantDecl;
             }
-            if (target == null) {
-                for (MemberDecl d : qualClass.fieldDeclList) {
-                    if (accessible(d, ref.ref, qualClass, arg) && d.name.equals(ref.id.spelling)) {
-                        target = d;
-                        break;
-                    }
-                }
-            }
-            FilterableIdentificationTable table = new ListLeveldIdentificationTable();
-            table.registerDeclaration(ref.id.spelling, target);
-            this.visitIdentifier(ref.id, table);
-            ref.dominantDecl = ref.id.dominantDecl;
         } else {
-            notQualifiedError(ref.ref);
+            notQualifiedError(ref);
+            throw new InvalidQRefException();
         }
         return null;
     }
@@ -510,6 +525,51 @@ public class IdentificationVisitor implements Visitor<FilterableIdentificationTa
         TypeDenoter thisType = new ClassType(thisId, null);
         FieldDecl thisField = new FieldDecl(true, false, thisType, "this", null);
         return thisField;
+    }
+
+    private Map<String, MemberDecl> getTargetAttributes(Reference srcRef,  ClassDecl qualClass, LeveledIdentificationTable arg) {
+        if(qualClass == null) {
+            return new HashMap<>();
+        }
+
+        Map<String, MemberDecl> superClassAttrs = getTargetAttributes(srcRef, qualClass.superClass, arg);
+
+        for(MethodDecl m : qualClass.methodDeclList) {
+            if(accessible(m, srcRef, qualClass, arg)) {
+                superClassAttrs.put(m.name, m);
+            }
+        }
+        for(FieldDecl f : qualClass.fieldDeclList) {
+            if(accessible(f, srcRef, qualClass, arg)) {
+                superClassAttrs.put(f.name, f);
+            }
+        }
+
+        return superClassAttrs;
+    }
+
+    private void resolveSuperclassDecls(IdentificationTable table, Collection<ClassDecl> visited, ClassDecl current) throws CyclicExtendsExcpetion {
+        if(current == null) {
+            return;
+        }
+        if(visited.contains(current)) {
+            current.superClassId = null;
+            current.superClass = null;
+            throw new CyclicExtendsExcpetion();
+        }
+        visited.add(current);
+        resolveSuperclassDecls(table, visited, current.superClass);
+        for(FieldDecl f : current.fieldDeclList) {
+            if(!f.isPrivate) {
+                table.registerDeclaration(f.name, f);
+            }
+        }
+        for(MethodDecl m : current.methodDeclList) {
+            if(!m.isPrivate) {
+                table.registerDeclaration(m.name, m);
+            }
+        }
+
     }
 
 }

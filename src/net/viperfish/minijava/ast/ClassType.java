@@ -42,7 +42,20 @@ public class ClassType extends TypeDenoter {
         if (!(baseType instanceof ClassType)) return false;
 
         ClassType classType = (ClassType) o;
-        return classType.className.dominantDecl.name.equals(this.className.dominantDecl.name);
+        return this.instanceOf(classType);
+    }
+
+    private boolean instanceOf(ClassType other) {
+        ClassDecl current = (ClassDecl) this.className.dominantDecl;
+        while(current != null) {
+            String currentName = current.name;
+            String otherName = other.className.dominantDecl.name;
+            if(currentName.equals(otherName)) {
+                return true;
+            }
+            current = current.superClass;
+        }
+        return false;
     }
 
 }

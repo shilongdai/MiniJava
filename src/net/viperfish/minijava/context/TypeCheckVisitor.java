@@ -155,7 +155,7 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
         TypeDenoter declType = this.visitVarDecl(stmt.varDecl, arg);
         TypeDenoter initType = VisitorUtils.visitCorrectExp(this, null, stmt.initExp);
 
-        if(!declType.equals(initType)) {
+        if(!initType.equals(declType)) {
             expectMatchingTypeError(stmt.initExp);
         }
 
@@ -176,7 +176,7 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
             }
         }
 
-        if(!refType.equals(assignedType)) {
+        if(!assignedType.equals(refType)) {
             expectMatchingTypeError(stmt.val);
         }
         return null;
@@ -546,7 +546,7 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
                 TypeDenoter declType = paramList.get(i).type;
                 TypeDenoter paramType = parameters.get(i).dominantType;
 
-                if(!declType.equals(paramType)) {
+                if(!paramType.equals(declType)) {
                     wrongParametersError(ref, method, parameters);
                     return new BaseType(TypeKind.ERROR, ref.posn);
                 }
@@ -560,7 +560,7 @@ public class TypeCheckVisitor implements Visitor<Object, TypeDenoter> {
 
     private TypeDenoter handleValMatchOps(Expression lhsExp, TypeDenoter lhs, TypeDenoter rhs) {
         TypeDenoter result = null;
-        if(!lhs.equals(rhs)) {
+        if(!lhs.equals(rhs) || !rhs.equals(lhs)) {
             result = new BaseType(TypeKind.ERROR, lhs.posn);
             expectMatchingTypeError(lhsExp);
         } else {

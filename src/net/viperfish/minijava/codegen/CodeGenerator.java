@@ -5,9 +5,7 @@ import net.viperfish.minijava.ast.Package;
 import net.viperfish.minijava.ast.*;
 import net.viperfish.minijava.mJAM.Machine;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class CodeGenerator implements Visitor<Object, Object> {
 
@@ -37,21 +35,7 @@ public class CodeGenerator implements Visitor<Object, Object> {
         }
         MainInfo mainClass = mainClassList.iterator().next();
 
-        for(ClassDecl cd : prog.classDeclList) {
-            int fieldSize = 0;
-            for(FieldDecl f : cd.fieldDeclList) {
-                int size = (int) f.visit(this, fieldSize);
-                if(!f.isStatic) {
-                    fieldSize += size;
-                }
-
-                if(fieldSize == Short.MAX_VALUE) {
-                    throw new IllegalArgumentException("Longer than shorts");
-                }
-            }
-
-            cd.runtimeEntity = new RuntimeEntity(fieldSize);
-        }
+        initClassRuntime(prog.classDeclList);
 
         Machine.emit(Machine.Op.LOADL, 0, 0, 0);
         Machine.emit(Machine.Prim.newarr);
@@ -80,7 +64,7 @@ public class CodeGenerator implements Visitor<Object, Object> {
 
     @Override
     public Integer visitFieldDecl(FieldDecl fd, Object arg) {
-        int size = (int) fd.type.visit(this, arg);
+        int size = (int) fd.type.visit(this, null);
         if(!fd.isStatic) {
             int offset = (int) arg;
             KnownAddress relative = new KnownAddress(0, new RuntimeAddress(Machine.Reg.OB, (short) 0), false);
@@ -153,7 +137,7 @@ public class CodeGenerator implements Visitor<Object, Object> {
     public Object visitBlockStmt(BlockStmt stmt, Object arg) {
         // TODO: deal with var decl
         ActivationFrame frame = (ActivationFrame) arg;
-        ActivationFrame fakeFrame = new ActivationFrame(frame.getAllocatedVar(), 0);
+        ActivationFrame fakeFrame = new ActivationFrame(frame.getAllocatedVar(), frame.getArgCount());
         for(Statement s : stmt.sl) {
             s.visit(this, fakeFrame);
         }
@@ -352,8 +336,9 @@ public class CodeGenerator implements Visitor<Object, Object> {
 
     @Override
     public Object visitNewObjectExpr(NewObjectExpr expr, Object arg) {
-        Machine.emit(Machine.Op.LOADL, -1);
-        Machine.emit(Machine.Op.LOADL, expr.classtype.className.dominantDecl.runtimeEntity.getSize());
+        ClassDecl classDecl = (ClassDecl) expr.classtype.className.dominantDecl;
+        Machine.emit(Machine.Op.LOADL, classDecl.classDescriptor.getAddress().getOffset());
+        Machine.emit(Machine.Op.LOADL, classDecl.runtimeEntity.getSize());
         Machine.emit(Machine.Prim.newobj);
 
         return expr.classtype.visit(this, null);
@@ -566,19 +551,17 @@ public class CodeGenerator implements Visitor<Object, Object> {
         if(entity instanceof UnknownAddress) {
             UnknownAddress unknownAddress = (UnknownAddress) entity;
             resolveUnknownAddress(unknownAddress);
-            callAddr = Machine.nextInstrAddr();
-            Machine.emit(Machine.Op.CALLI, 0);
+            Machine.emit(Machine.Op.CALLD, decl.descriptorOffset);
         } else {
             if(decl.isStatic) {
                 callAddr = Machine.nextInstrAddr();
                 Machine.emit(Machine.Op.CALL, 0);
+                patchAddress.add(new PatchInfo(decl, callAddr));
             } else {
                 Machine.emit(Machine.Op.LOADA, Machine.Reg.OB, 0);
-                callAddr = Machine.nextInstrAddr();
-                Machine.emit(Machine.Op.CALLI, 0);
+                Machine.emit(Machine.Op.CALLD, decl.descriptorOffset);
             }
         }
-        patchAddress.add(new PatchInfo(decl, callAddr));
     }
 
     private void getArrAddress(Reference ref) {
@@ -591,6 +574,130 @@ public class CodeGenerator implements Visitor<Object, Object> {
             resolveUnknownAddress(uaddr);
             getUnknownAddrVal(uaddr);
         }
+    }
+
+    private int getFieldSize(FieldDecl f) {
+        return (int) f.type.visit(this, null);
+    }
+
+    private void initClassRuntime(ClassDeclList classes) {
+        initSeparateSize(classes);
+        initCombinedSize(classes);
+        initFields(classes);
+        initClassDescriptors(classes);
+    }
+
+    private void initSeparateSize(ClassDeclList classes) {
+        for(ClassDecl cd : classes) {
+            int fieldSize = 0;
+            for(FieldDecl f : cd.fieldDeclList) {
+                int size = getFieldSize(f);
+                if(!f.isStatic) {
+                    fieldSize += size;
+                }
+
+                if(fieldSize == Short.MAX_VALUE) {
+                    throw new IllegalArgumentException("Longer than shorts");
+                }
+            }
+
+            cd.runtimeEntity = new RuntimeEntity(fieldSize);
+        }
+    }
+
+    private void initFields(ClassDeclList classes) {
+        for(ClassDecl cd : classes) {
+            int fieldSize = 0;
+            int superClassOffset = 0;
+            if(cd.superClass != null) {
+                superClassOffset = cd.superClass.runtimeEntity.getSize();
+            }
+            for(FieldDecl f : cd.fieldDeclList) {
+                int size = (int) f.visit(this, superClassOffset + fieldSize);
+                if(!f.isStatic) {
+                    fieldSize += size;
+                }
+
+                if(fieldSize == Short.MAX_VALUE) {
+                    throw new IllegalArgumentException("Longer than shorts");
+                }
+            }
+        }
+    }
+
+    private void initClassDescriptors(ClassDeclList classes) {
+        Map<String, Map<String, MethodDecl>> cache = new HashMap<>();
+        for(ClassDecl cd : classes) {
+            SortedMap<Integer, MethodDecl> methods = collectMethods(cd, cache);
+            cd.classDescriptor = new KnownAddress(methods.size(), new RuntimeAddress(Machine.Reg.SB, staticOffset), true);
+            Machine.emit(Machine.Op.LOADL, -1);
+            Machine.emit(Machine.Op.LOADL, methods.size());
+
+            for(Map.Entry<Integer, MethodDecl> m : methods.entrySet()) {
+                int addr = Machine.nextInstrAddr();
+                Machine.emit(Machine.Op.LOADA, Machine.Reg.CB, -1);
+                patchAddress.add(new PatchInfo(m.getValue(), addr));
+            }
+
+            staticOffset += methods.size() + 2;
+        }
+    }
+
+    private void initCombinedSize(ClassDeclList classes) {
+        Map<String, Integer> cache = new HashMap<>();
+        for(ClassDecl cd : classes) {
+            initClassSize(cd, cache);
+        }
+    }
+
+    private int initClassSize(ClassDecl decl, Map<String, Integer> cache) {
+        if(decl == null) {
+            return 0;
+        }
+        if(cache.containsKey(decl.name)) {
+            return cache.get(decl.name);
+        }
+        int superClassSize = initClassSize(decl.superClass, cache);
+        decl.runtimeEntity = new RuntimeEntity(decl.runtimeEntity.getSize() + superClassSize);
+        cache.put(decl.name, decl.runtimeEntity.getSize());
+        return decl.runtimeEntity.getSize();
+    }
+
+    private SortedMap<Integer, MethodDecl> collectMethods(ClassDecl decl, Map<String, Map<String, MethodDecl>> cache) {
+        if(decl == null) {
+            return new TreeMap<>();
+        }
+        if(cache.containsKey(decl.name)) {
+            Map<String, MethodDecl> methods = cache.get(decl.name);
+            SortedMap<Integer, MethodDecl> result = new TreeMap<>();
+            for(MethodDecl m : methods.values()) {
+                result.put(m.descriptorOffset, m);
+            }
+            return result;
+        }
+        SortedMap<Integer, MethodDecl> parent = collectMethods(decl.superClass, cache);
+        SortedMap<Integer, MethodDecl> current = new TreeMap<>(parent);
+        Map<String, MethodDecl> parentMethods = new HashMap<>();
+        if(decl.superClass != null) {
+            parentMethods = cache.get(decl.superClass.name);
+        }
+        Map<String, MethodDecl> currentMethods = new HashMap<>(parentMethods);
+
+        int offset = parent.size();
+        for(MethodDecl m : decl.methodDeclList) {
+            if(m.isStatic) {
+                continue;
+            }
+            if(parentMethods.containsKey(m.name)) {
+                m.descriptorOffset  = parentMethods.get(m.name).descriptorOffset;
+            } else {
+                m.descriptorOffset = offset++;
+            }
+            current.put(m.descriptorOffset, m);
+            currentMethods.put(m.name, m);
+        }
+        cache.put(decl.name, currentMethods);
+        return current;
     }
 
 }
